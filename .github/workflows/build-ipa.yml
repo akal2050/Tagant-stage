@@ -1,0 +1,93 @@
+name: Build iPad app (unsigned IPA for SideStore)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.7.2
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: |
+          XC=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using $XC"
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Build native two-screen plugin
+        run: bash native/tagant_display/build.sh
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/Library/Application Support/Godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-ios
+
+      - name: Download Godot + iOS template
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          B=https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable
+          mkdir -p ~/godot && cd ~/godot
+          curl -sSL -o godot.zip $B/Godot_v${GODOT_VERSION}-stable_macos.universal.zip
+          unzip -q godot.zip && rm godot.zip
+          curl -sSL -o tpl.tpz $B/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          T="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$T"
+          unzip -qj tpl.tpz 'templates/ios.zip' 'templates/version.txt' -d "$T"
+          rm tpl.tpz
+
+      - name: Export Xcode project from Godot
+        run: |
+          G=~/godot/Godot.app/Contents/MacOS/Godot
+          mkdir -p build
+          $G --headless --path godot --import || true
+          # On macOS Godot would try to build and sign; force project-only export.
+          $G --headless --path godot --export-release "iOS" ../build/TagantStage.ipa
+          ls build
+
+      - name: Build app (no signing — SideStore signs it on the iPad)
+        run: |
+          xcodebuild -project build/TagantStage.xcodeproj -scheme TagantStage \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" CODE_SIGN_ENTITLEMENTS="" build | tail -40
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/dd/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -1)
+          echo "App: $APP"
+          rm -rf Payload && mkdir Payload && cp -R "$APP" Payload/
+          zip -qry TagantStage.ipa Payload
+          ls -la TagantStage.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TagantStage-ipa
+          path: TagantStage.ipa
+
+      - name: Publish as the "latest" download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Tagant Stage — latest build
+          prerelease: true
+          files: TagantStage.ipa
+          body: |
+            Open this page in Safari on the iPad, tap TagantStage.ipa, then "Open in SideStore".
+            Build ${{ github.run_number }} from ${{ github.sha }}.

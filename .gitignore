@@ -1,0 +1,6 @@
+build/
+.godot/
+native/tagant_display/build/
+godot/ios/plugins/tagant_display/libtagant_display.a
+Payload/
+*.ipa
