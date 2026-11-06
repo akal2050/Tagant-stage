@@ -1,0 +1,10 @@
+# The singer's part in the protest songs: a chant about water, in Amazigh or Arabic (fusha).
+# One line per round (the rounds cycle through these lines). Six fields separated by |
+#   language | in Latin letters | in Tifinagh (Amazigh lines) | in Arabic letters | English translation | Arabic translation
+# English app: the Latin line big, Tifinagh (or the Arabic script) under it, the English translation small.
+# Arabic app:  the Arabic-letter line big, Tifinagh under it (Amazigh lines), the Arabic translation small.
+# THESE LINES ARE PLACEHOLDERS (Claude's drafts): replace them with your own chant.
+amazigh | Aman! Aman! | ⴰⵎⴰⵏ! ⴰⵎⴰⵏ! | أمان! أمان! | water! water! | ماء! ماء!
+amazigh | Aman nnegh! | ⴰⵎⴰⵏ ⵏⵏⵖ! | أمان نّغ! | our water! | ماؤنا!
+arabic | Al-māʾu lanā! | | الماءُ لنا! | the water is ours! | الماءُ لنا!
+arabic | Al-māʾu ḥaqq! | | الماءُ حقّ! | water is a right! | الماءُ حقّ!
