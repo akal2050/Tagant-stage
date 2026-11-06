@@ -1,0 +1,505 @@
+<title>Dove Man Score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: a score sheet — a long horizontal hour scrolled under a fixed reading line; voices and their parts below. */
+:root {
+  --paper: #e2e0d9;        /* drafting paper, faintly grey */
+  --paper-2: #d6d3ca;      /* bands, rulers */
+  --ink: #1b1a17;          /* rhythm: marks */
+  --ink-2: #5d5a52;        /* secondary ink */
+  --cobalt: #2541a8;       /* tone: held lines */
+  --oxide: #b23a1c;        /* strikes: Godzilla, cars */
+  --grid: rgba(27,26,23,0.12);
+  --mono: "Martian Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --text: "Newsreader", "Iowan Old Style", Georgia, serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--text); font-size: 16px; line-height: 1.5; }
+.wrap { padding-inline: clamp(16px, 3vw, 40px); padding-block: 28px 56px; max-width: 1500px; margin: 0 auto; display: grid; gap: 22px; }
+header { display: grid; gap: 10px; }
+.wrap > * { min-width: 0; }
+.sheet, .scroller { max-width: 100%; }
+h1 { font-family: var(--mono); font-weight: 600; font-size: clamp(22px, 3.2vw, 34px); letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.sub { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); }
+.intro { max-width: 68ch; margin: 0; }
+.intro b { font-weight: 500; }
+.k-tone { color: var(--cobalt); } .k-rhythm { color: var(--ink); text-decoration: underline dotted; } .k-strike { color: var(--oxide); }
+
+.transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; font-family: var(--mono); font-size: 13px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); padding-block: 10px; border-bottom: 1px solid var(--grid); }
+button, select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--ink); border-radius: 2px; padding: 6px 12px; cursor: pointer; }
+button:focus-visible, select:focus-visible, .seg button:focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+#play { min-width: 92px; background: var(--ink); color: var(--paper); }
+.clock { font-variant-numeric: tabular-nums; font-size: 20px; font-weight: 600; min-width: 7ch; }
+.phase { color: var(--ink-2); text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; }
+label.ctl { display: inline-flex; gap: 8px; align-items: center; color: var(--ink-2); }
+
+.sheet { position: relative; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+.scroller { overflow-x: auto; overflow-y: hidden; cursor: crosshair; }
+.track { position: relative; }
+#score { position: sticky; left: 0; display: block; }
+#overview { width: 100%; height: 64px; display: block; cursor: pointer; border-bottom: 1px solid var(--grid); }
+
+.now { display: flex; flex-wrap: wrap; gap: 6px; font-family: var(--mono); font-size: 11px; min-height: 30px; }
+.chip { padding: 4px 8px; border: 1px solid var(--grid); border-radius: 2px; color: var(--ink-2); transition: background 0.25s, color 0.25s; font-variant-numeric: tabular-nums; }
+.chip.tone { color: var(--cobalt); border-color: rgba(37,65,168,0.35); }
+.chip.hit { background: var(--ink); color: var(--paper); transition: none; }
+.chip.strike.hit { background: var(--oxide); border-color: var(--oxide); }
+
+h2 { font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 8px 0 0; }
+.voices { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 0; border-top: 1px solid var(--ink); }
+.voice { display: grid; grid-template-columns: 54px 1fr; gap: 4px 14px; padding: 14px 14px 14px 0; border-bottom: 1px solid var(--grid); min-width: 0; }
+.voice canvas { grid-row: span 3; width: 54px; height: 40px; }
+.voice .nm { font-family: var(--mono); font-size: 13px; font-weight: 600; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.voice .nm .count { font-weight: 300; color: var(--ink-2); font-size: 11px; }
+.voice .what { font-size: 14px; color: var(--ink-2); min-width: 0; }
+.voice .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--ink); border-radius: 2px; }
+.seg button { border: 0; border-radius: 0; padding: 3px 10px; font-size: 11px; font-family: var(--mono); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button.t[aria-pressed="true"] { background: var(--cobalt); }
+.mute { font-size: 11px; padding: 3px 8px; font-family: var(--mono); border-color: var(--grid); color: var(--ink-2); }
+.mute[aria-pressed="true"] { text-decoration: line-through; }
+details.members { grid-column: 2; font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+details.members summary { cursor: pointer; }
+details.members .m { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px dotted var(--grid); }
+
+.howto { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px 36px; font-size: 15px; }
+.howto p { margin: 0; max-width: 60ch; }
+.howto b { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 2px; }
+footer { font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
+@media (prefers-reduced-motion: reduce) { .chip { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="sub">TAGANT · World of Dove Man · one recorded hour</div>
+    <h1>Dove Man — score for one hour</h1>
+    <p class="intro">Each line and mark is a body in the world, drawn where it really was. Time runs left to right, sixty minutes.
+      Height is <b>distance from Dove Man</b>: the mountain lies along the bottom edge, the horizon at the top. Treat height as pitch, or as anything you like.
+      <span class="k-tone">Tones</span> are held lines, <span class="k-rhythm">rhythms</span> are marks at the moments they happen, and <span class="k-strike">strikes</span> are the impacts.
+      Every voice can be switched between tone and rhythm below.</p>
+  </header>
+
+  <div class="transport" role="group" aria-label="Playback">
+    <button id="play" type="button">▶ Play</button>
+    <span class="clock" id="clock">00:00</span>
+    <span class="phase" id="phase">silence</span>
+    <label class="ctl" for="speed">speed
+      <select id="speed"><option value="1">1× live</option><option value="4">4×</option><option value="15">15×</option><option value="60">60×</option></select></label>
+    <label class="ctl" for="zoom">zoom
+      <select id="zoom"><option value="40">40 px / min</option><option value="90" selected>90 px / min</option><option value="200">200 px / min</option><option value="480">480 px / min</option></select></label>
+  </div>
+
+  <div>
+    <canvas id="overview" aria-label="The whole hour at a glance. Click to move the reading line."></canvas>
+    <div class="sheet">
+      <div class="scroller" id="scroller"><div class="track" id="track"><canvas id="score" aria-label="The score. Click to move the reading line."></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="now" id="now" aria-live="off"></div>
+
+  <section>
+    <h2>Voices</h2>
+    <div class="voices" id="voices"></div>
+  </section>
+
+  <section class="howto">
+    <p><b>Reading line</b>The vertical line is now. Press play to let it run in real time with the world, or click anywhere on the score or the overview to place it. Chips above the voices light up on every event as the line passes.</p>
+    <p><b>Height</b>Distance from Dove Man on a root scale, so the circles near him get room: 37 m inner tawaf, 118 m outer tawaf, 300–470 m the dinosaurs' tracks, 700 m the edge where Godzilla appears and vanishes.</p>
+    <p><b>Line weight</b>For a tone, thickness is how strongly the body moves (its speed, or how present it is). A gap is a rest: the animal stands, the mannequin lies fallen.</p>
+    <p><b>Top strip</b>The weather of the hour: the sun's height (line) and the haze (shading), with the seven phases from silence to stillness.</p>
+  </section>
+  <footer id="foot"></footer>
+</div>
+
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+(() => {
+const D = JSON.parse(document.getElementById('data').textContent);
+const DUR = D.meta.duration_s;
+const css = getComputedStyle(document.documentElement);
+const C = { paper: css.getPropertyValue('--paper').trim(), paper2: css.getPropertyValue('--paper-2').trim(), ink: css.getPropertyValue('--ink').trim(),
+  ink2: css.getPropertyValue('--ink-2').trim(), cobalt: css.getPropertyValue('--cobalt').trim(), oxide: css.getPropertyValue('--oxide').trim(), grid: css.getPropertyValue('--grid').trim() };
+const R_MAX = 720;
+const RINGS = [[0, 'Dove Man'], [37, 'inner tawaf'], [78, 'palms'], [118, 'outer tawaf'], [300, 'dinosaurs'], [470, 'far dinosaur'], [700, 'horizon']];
+const STRIKE = new Set(['godzilla', 'cars']);
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+
+// ---- voices & state
+const V = D.voices;
+const saved = store.get('dm-score-voices', {});
+for (const v of V) {
+  v.defaultMode = v.mode;
+  if (saved[v.id]) { v.mode = saved[v.id].mode || v.mode; v.hidden = !!saved[v.id].hidden; }
+  v.events.sort((a, b) => a[0] - b[0]);
+}
+function persist() { const o = {}; for (const v of V) o[v.id] = { mode: v.mode, hidden: !!v.hidden }; store.set('dm-score-voices', o); }
+
+let pxPerMin = +store.get('dm-score-zoom', 90);
+let now = 0, playing = false, speed = 1, lastFrame = 0;
+
+// ---- geometry
+const scroller = document.getElementById('scroller');
+const track = document.getElementById('track');
+const cv = document.getElementById('score');
+const ctx = cv.getContext('2d');
+const ov = document.getElementById('overview');
+const octx = ov.getContext('2d');
+const TOP = 46, BOTTOM_PAD = 26, AXIS = 104;
+let W = 800, H = 560, DPR = 1;
+const totalW = () => DUR / 60 * pxPerMin;
+const xOf = s => AXIS + s / 60 * pxPerMin;
+const yOf = r => { const u = Math.sqrt(Math.max(0, Math.min(R_MAX, r)) / R_MAX); return H - BOTTOM_PAD - u * (H - TOP - BOTTOM_PAD - 10); };
+const idx = s => Math.max(0, Math.min(D.n - 1, Math.round((s - D.t0) / D.dt)));
+
+function size() {
+  DPR = window.devicePixelRatio || 1;
+  W = scroller.clientWidth;
+  H = Math.max(420, Math.min(640, Math.round(window.innerHeight * 0.62)));
+  track.style.width = (totalW() + AXIS + W * 0.5) + 'px';
+  track.style.height = H + 'px';
+  cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ov.width = ov.clientWidth * DPR; ov.height = 64 * DPR;
+  drawOverviewBase(); draw();
+}
+
+// first event index at or after s (binary search)
+function firstAt(ev, s) { let lo = 0, hi = ev.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ev[m][0] < s) lo = m + 1; else hi = m; } return lo; }
+function hash(n) { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+
+// ---- drawing one voice
+function colorFor(v) { return STRIKE.has(v.group) ? C.oxide : (v.mode === 'tone' ? C.cobalt : C.ink); }
+
+function drawTone(g, v, t0, t1, X, Y, scale) {
+  g.strokeStyle = colorFor(v); g.lineCap = 'round';
+  const i0 = Math.max(0, idx(t0) - 1), i1 = Math.min(D.n - 1, idx(t1) + 1);
+  const step = Math.max(1, Math.floor((D.dt * 60 / pxPerMin) / 1.5 / (scale || 1)));
+  if (v.group === 'cars') {
+    for (const e of v.events) {
+      if (e[0] > t1 || e[0] + v.fill_s < t0) continue;
+      const y = Y(e[1]);
+      for (let k = 0; k < 24; k++) {
+        const a = e[0] + v.fill_s * k / 24, b = e[0] + v.fill_s * (k + 1) / 24;
+        g.globalAlpha = 0.9 * (1 - k / 24); g.lineWidth = 5 * (1 - k / 24) * scale + 0.5;
+        g.beginPath(); g.moveTo(X(a), y); g.lineTo(X(b), y); g.stroke();
+      }
+    }
+    g.globalAlpha = 1; return;
+  }
+  if (v.group === 'birds') {
+    for (const f of v.flocks) {
+      for (let i = i0; i < i1; i += step) {
+        const j = Math.min(i1, i + step);
+        if (f.r[i] == null || f.r[j] == null) continue;
+        g.globalAlpha = 0.75; g.lineWidth = (0.6 + f.n[i] / 7 * 3.2) * scale;
+        g.beginPath(); g.moveTo(X(D.t0 + i * D.dt), Y(f.r[i])); g.lineTo(X(D.t0 + j * D.dt), Y(f.r[j])); g.stroke();
+      }
+    }
+    g.globalAlpha = 1; return;
+  }
+  if (v.group === 'dove') {
+    for (let i = i0; i < i1; i += step) {
+      const j = Math.min(i1, i + step);
+      const th = (3 + v.w[i] * 16) * scale;
+      g.fillStyle = colorFor(v); g.globalAlpha = 0.85;
+      g.fillRect(X(D.t0 + i * D.dt), Y(0) - th / 2, X(D.t0 + j * D.dt) - X(D.t0 + i * D.dt) + 0.6, th);
+    }
+    g.globalAlpha = 1; return;
+  }
+  for (let i = i0; i < i1; i += step) {
+    const j = Math.min(i1, i + step);
+    const ra = v.r[i], rb = v.r[j];
+    if (ra == null || rb == null) continue;
+    const w = v.w ? v.w[i] : 1;
+    if (v.down && (v.down[i] || v.down[j])) continue;
+    if (v.group === 'godzilla') { if (w < 0.02) continue; g.globalAlpha = 0.25 + 0.75 * w; g.lineWidth = (1 + 5 * w) * scale; }
+    else if (v.group === 'boeing') { g.globalAlpha = 0.9; g.lineWidth = (0.8 + w * 1.2) * scale; }
+    else { if (w < 0.04) continue; g.globalAlpha = 0.9; g.lineWidth = (0.7 + w * 3.3) * scale; }
+    let ya = Y(ra), yb = Y(rb);
+    if (v.vib) { ya += Math.sin(v.vib[i] * 3) * 4 * scale; yb += Math.sin(v.vib[j] * 3) * 4 * scale; }
+    g.beginPath(); g.moveTo(X(D.t0 + i * D.dt), ya); g.lineTo(X(D.t0 + j * D.dt), yb); g.stroke();
+  }
+  g.globalAlpha = 1;
+}
+
+function drawRhythm(g, v, t0, t1, X, Y, scale) {
+  const col = colorFor(v);
+  g.strokeStyle = col; g.fillStyle = col; g.lineCap = 'butt';
+  const ev = v.events;
+  const minGap = (60 / pxPerMin) * 1.2 / (scale || 1);   // seconds between drawn marks at this zoom
+  let lastX = -1e9;
+  for (let k = firstAt(ev, t0); k < ev.length && ev[k][0] <= t1; k++) {
+    const e = ev[k]; const x = X(e[0]);
+    if (v.group !== 'cars' && v.group !== 'godzilla' && v.group !== 'birds' && x - lastX < 1.1 * scale) continue;
+    lastX = x;
+    const y = Y(e[1]);
+    switch (v.group) {
+      case 'godzilla': {
+        const L = (5 + 20 * e[2]) * scale, up = k % 2 ? -1 : 1;
+        g.globalAlpha = 0.25 + 0.75 * e[2]; g.lineWidth = 2.2 * scale;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x, y - up * L); g.stroke(); break; }
+      case 'cars':
+        g.globalAlpha = 1; g.lineWidth = 1.6 * scale;
+        g.beginPath(); g.arc(x, y, 7 * scale, 0, Math.PI * 2); g.stroke();
+        g.beginPath(); g.moveTo(x - 10 * scale, y); g.lineTo(x + 10 * scale, y); g.moveTo(x, y - 10 * scale); g.lineTo(x, y + 10 * scale); g.stroke(); break;
+      case 'dino':
+        g.globalAlpha = 0.85; g.lineWidth = 1.4 * scale;
+        g.beginPath(); g.moveTo(x, y - 6 * scale); g.lineTo(x, y + 6 * scale); g.stroke(); break;
+      case 'inner':
+        g.globalAlpha = 0.8; g.beginPath(); g.arc(x, y, 1.3 * scale, 0, Math.PI * 2); g.fill(); break;
+      case 'outer':
+        g.globalAlpha = 0.8; g.lineWidth = 1.3 * scale;
+        g.beginPath(); g.moveTo(x - 2 * scale, y); g.lineTo(x + 2 * scale, y); g.stroke(); break;
+      case 'camel': {
+        const s = 2.6 * scale; g.globalAlpha = 0.85; g.lineWidth = 1 * scale;
+        g.beginPath(); g.moveTo(x - s, y + s); g.lineTo(x + s, y + s); g.lineTo(x, y - s); g.closePath();
+        if (e[2] >= 1) g.fill(); else g.stroke(); break; }
+      case 'boeing':
+        g.globalAlpha = 0.9; g.lineWidth = 1.2 * scale;
+        g.beginPath(); g.moveTo(x, y - 5 * scale); g.lineTo(x + 4 * scale, y); g.lineTo(x, y + 5 * scale); g.lineTo(x - 4 * scale, y); g.closePath(); g.stroke(); break;
+      case 'dove': {
+        const L = (4 + 14 * e[2]) * scale; g.globalAlpha = 0.8; g.lineWidth = 1.2 * scale;
+        g.beginPath(); g.moveTo(x, y - L - 4 * scale); g.lineTo(x + L * 0.4, y - 3 * scale); g.stroke(); break; }
+      case 'birds': {
+        const n = e[2], per = e[3];
+        for (let q = 0; q < n; q++) {
+          const hx = (hash(e[0] * 3.1 + q) - 0.5) * 7 * scale, hy = (hash(e[0] * 7.7 + q * 1.3) - 0.5) * (4 + n * 2.2) * scale;
+          g.globalAlpha = 0.7;
+          if (q < per) { g.lineWidth = 0.8 * scale; g.beginPath(); g.arc(x + hx, y + hy, 1.4 * scale, 0, Math.PI * 2); g.stroke(); }
+          else g.fillRect(x + hx, y + hy, 1.3 * scale, 1.3 * scale);
+        }
+        break; }
+    }
+  }
+  // falls and risings belong to the mannequins whatever their mode
+  if (v.falls) {
+    g.strokeStyle = C.ink; g.globalAlpha = 1; g.lineWidth = 1.6 * scale;
+    for (const s of v.falls) { if (s < t0 || s > t1) continue; const x = X(s), y = Y(v.r[idx(s)]), a = 5 * scale;
+      g.beginPath(); g.moveTo(x - a, y - a); g.lineTo(x + a, y + a); g.moveTo(x + a, y - a); g.lineTo(x - a, y + a); g.stroke(); }
+    for (const s of v.rises) { if (s < t0 - 8 || s > t1) continue; const y = Y(v.r[idx(s)]);
+      for (let q = 0; q < 3; q++) { const x = X(s - 6 + q * 2); g.beginPath(); g.moveTo(x, y + 3 * scale - q * 3 * scale); g.lineTo(x, y - 3 * scale - q * 3 * scale); g.stroke(); } }
+  }
+  g.globalAlpha = 1;
+}
+
+function drawVoice(g, v, t0, t1, X, Y, scale) {
+  if (v.hidden) return;
+  if (v.mode === 'tone') drawTone(g, v, t0, t1, X, Y, scale); else drawRhythm(g, v, t0, t1, X, Y, scale);
+}
+
+// ---- the sheet
+function phaseAt(s) { let p = D.phases[0]; for (const q of D.phases) if (s >= q.min * 60) p = q; return p; }
+
+function draw() {
+  const g = ctx; g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const sl = scroller.scrollLeft;
+  const X = s => xOf(s) - sl;
+  const t0 = Math.max(0, (sl - AXIS) / pxPerMin * 60 - 30), t1 = Math.min(DUR, (sl + W) / pxPerMin * 60 + 30);
+  g.fillStyle = C.paper; g.fillRect(0, 0, W, H);
+  // phases
+  D.phases.forEach((p, i) => {
+    const a = X(p.min * 60), b = X((D.phases[i + 1] ? D.phases[i + 1].min : 60) * 60);
+    if (i % 2) { g.fillStyle = 'rgba(27,26,23,0.035)'; g.fillRect(a, TOP, b - a, H - TOP); }
+    g.fillStyle = C.ink2; g.font = '600 10px "Martian Mono", monospace';
+    if (b > 0 && a < W) { g.fillText(p.name.toUpperCase(), Math.max(a + 6, AXIS + 6), 13); }
+    g.strokeStyle = C.ink; g.globalAlpha = 0.5; g.lineWidth = 1; g.beginPath(); g.moveTo(a, 0); g.lineTo(a, H); g.stroke(); g.globalAlpha = 1;
+  });
+  // weather strip: haze shading + sun height
+  const i0 = idx(t0), i1 = idx(t1);
+  const fogMax = Math.max(...D.fog) || 1;
+  for (let i = i0; i < i1; i += 2) { g.fillStyle = `rgba(27,26,23,${0.22 * D.fog[i] / fogMax})`; g.fillRect(X(D.t0 + i * D.dt), 18, Math.max(1, 2 * D.dt / 60 * pxPerMin + 0.5), 22); }
+  g.strokeStyle = C.ink; g.lineWidth = 1.2; g.beginPath();
+  for (let i = i0; i <= i1; i += 2) { const y = 40 - Math.max(-5, D.sun[i]) / 50 * 20; i === i0 ? g.moveTo(X(D.t0 + i * D.dt), y) : g.lineTo(X(D.t0 + i * D.dt), y); }
+  g.stroke();
+  // minute ruler
+  g.font = '400 10px "Martian Mono", monospace';
+  const every = pxPerMin >= 160 ? 1 : pxPerMin >= 60 ? 5 : 10;
+  for (let m = Math.floor(t0 / 60); m <= Math.ceil(t1 / 60); m++) {
+    const x = X(m * 60); g.strokeStyle = C.grid; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(x, TOP); g.lineTo(x, H - BOTTOM_PAD + 4); g.stroke();
+    if (m % every === 0) { g.fillStyle = C.ink2; g.fillText(String(m).padStart(2, '0') + "'", x + 3, H - 8); }
+  }
+  // distance rings
+  for (const [r, name] of RINGS) { const y = yOf(r); g.strokeStyle = C.grid; g.setLineDash([2, 4]); g.beginPath(); g.moveTo(AXIS, y); g.lineTo(W, y); g.stroke(); g.setLineDash([]); }
+  // voices, tones underneath rhythms
+  for (const v of V) if (v.mode === 'tone') drawVoice(g, v, t0, t1, X, yOf, 1);
+  for (const v of V) if (v.mode !== 'tone') drawVoice(g, v, t0, t1, X, yOf, 1);
+  // axis gutter
+  g.fillStyle = C.paper; g.fillRect(0, TOP - 2, AXIS - 6, H - TOP);
+  g.strokeStyle = C.ink; g.lineWidth = 1; g.beginPath(); g.moveTo(AXIS - 6, TOP); g.lineTo(AXIS - 6, H - BOTTOM_PAD); g.stroke();
+  g.font = '400 9.5px "Martian Mono", monospace'; g.fillStyle = C.ink2; g.textAlign = 'right';
+  for (const [r, name] of RINGS) { const y = yOf(r); g.fillText(r + ' m', AXIS - 12, y - 1); g.fillText(name, AXIS - 12, y + 10); }
+  g.textAlign = 'left';
+  g.fillStyle = C.paper; g.fillRect(0, 0, AXIS - 6, TOP - 2);
+  g.fillStyle = C.ink2; g.fillText('sun · haze', 4, 33);
+  // reading line
+  const xn = X(now);
+  if (xn > AXIS - 6 && xn < W) { g.strokeStyle = C.oxide; g.lineWidth = 1.5; g.beginPath(); g.moveTo(xn, 0); g.lineTo(xn, H); g.stroke(); }
+}
+
+// overview: the whole hour, drawn once, then the window and line on top
+let ovBase = null;
+function drawOverviewBase() {
+  const w = ov.width / DPR, h = 64, g = octx; g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.fillStyle = C.paper2; g.fillRect(0, 0, w, h);
+  const X = s => s / DUR * w, Y = r => { const u = Math.sqrt(Math.max(0, Math.min(R_MAX, r)) / R_MAX); return h - 4 - u * (h - 8); };
+  const keep = pxPerMin; pxPerMin = w / (DUR / 60);
+  for (const v of V) if (v.mode === 'tone') drawVoice(g, v, 0, DUR, X, Y, 0.45);
+  for (const v of V) if (v.mode !== 'tone') drawVoice(g, v, 0, DUR, X, Y, 0.45);
+  pxPerMin = keep;
+  ovBase = g.getImageData(0, 0, ov.width, ov.height);
+}
+function drawOverview() {
+  if (!ovBase) return;
+  const w = ov.width / DPR, g = octx; g.setTransform(1, 0, 0, 1, 0, 0); g.putImageData(ovBase, 0, 0); g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const a = (scroller.scrollLeft - AXIS) / totalW() * w, b = (scroller.scrollLeft + W - AXIS) / totalW() * w;
+  g.strokeStyle = C.ink; g.lineWidth = 1; g.strokeRect(Math.max(0, a), 0.5, b - a, 63);
+  g.strokeStyle = C.oxide; g.lineWidth = 1.5; const xn = now / DUR * w; g.beginPath(); g.moveTo(xn, 0); g.lineTo(xn, 64); g.stroke();
+}
+
+// ---- now / chips
+const nowEl = document.getElementById('now');
+const chips = {};
+function buildChips() {
+  nowEl.innerHTML = '';
+  for (const v of V) {
+    if (v.hidden || /^(inner|outer)[2-7]$/.test(v.id) || /^dino[2-4]$/.test(v.id)) continue;
+    const c = document.createElement('span'); c.className = 'chip' + (v.mode === 'tone' ? ' tone' : '') + (STRIKE.has(v.group) ? ' strike' : '');
+    nowEl.appendChild(c); chips[v.id] = c;
+  }
+}
+const groupMembers = g => V.filter(v => v.group === g && !v.hidden);
+function chipFor(v) {
+  if (/^inner|^outer|^dino/.test(v.id)) return chips[v.group === 'dino' ? 'dino1' : v.group + '1'];
+  return chips[v.id];
+}
+function updateChips(prev, cur) {
+  const i = idx(cur);
+  for (const id in chips) { const v = V.find(x => x.id === id); const c = chips[id];
+    let label = v.name;
+    if (v.group === 'inner' || v.group === 'outer') label = (v.group === 'inner' ? 'Inner circle' : 'Outer circle');
+    if (v.group === 'dino') label = 'Dinosaurs';
+    let info = '';
+    if (v.group === 'birds') info = ` ${v.count[i]} birds`;
+    else if (v.group === 'godzilla') info = v.r[i] == null ? ' —' : ` ${Math.round(v.r[i])} m`;
+    else if (v.group === 'cars') info = '';
+    else if (v.group === 'dino') info = ' ' + groupMembers('dino').map(d => Math.round(d.r[i])).join(' · ') + ' m';
+    else if (v.r && v.r[i] != null && v.group !== 'inner' && v.group !== 'outer') info = ` ${Math.round(v.r[i])} m`;
+    c.textContent = label + info;
+  }
+  if (cur <= prev || cur - prev > 5) return;
+  for (const v of V) { if (v.hidden) continue; const ev = v.events; const k = firstAt(ev, prev);
+    if (k < ev.length && ev[k][0] <= cur) { const c = chipFor(v); if (c) { c.classList.add('hit'); clearTimeout(c._t); c._t = setTimeout(() => c.classList.remove('hit'), 90); } } }
+}
+
+// ---- transport
+const playBtn = document.getElementById('play'), clock = document.getElementById('clock'), phaseEl = document.getElementById('phase');
+function fmt(s) { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+function setNow(s, follow) {
+  const prev = now; now = Math.max(0, Math.min(DUR, s));
+  clock.textContent = fmt(now); phaseEl.textContent = phaseAt(now).name;
+  if (follow) { const target = xOf(now) - W * 0.33; if (Math.abs(scroller.scrollLeft - target) > 1) scroller.scrollLeft = target; }
+  updateChips(prev, now); draw(); drawOverview();
+}
+function tick(ts) {
+  if (!playing) return;
+  const d = lastFrame ? (ts - lastFrame) / 1000 : 0; lastFrame = ts;
+  setNow(now + d * speed, true);
+  if (now >= DUR) { playing = false; playBtn.textContent = '▶ Play'; return; }
+  requestAnimationFrame(tick);
+}
+playBtn.addEventListener('click', () => {
+  playing = !playing; playBtn.textContent = playing ? '❚❚ Pause' : '▶ Play';
+  if (playing) { if (now >= DUR) now = 0; lastFrame = 0; requestAnimationFrame(tick); }
+});
+document.getElementById('speed').addEventListener('change', e => { speed = +e.target.value; });
+const zoomSel = document.getElementById('zoom'); zoomSel.value = String(pxPerMin);
+zoomSel.addEventListener('change', e => { pxPerMin = +e.target.value; store.set('dm-score-zoom', pxPerMin); size(); setNow(now, true); });
+scroller.addEventListener('scroll', () => { draw(); drawOverview(); }, { passive: true });
+cv.addEventListener('click', e => { const r = cv.getBoundingClientRect(); setNow((e.clientX - r.left + scroller.scrollLeft - AXIS) / pxPerMin * 60, false); });
+function ovSeek(e) { const r = ov.getBoundingClientRect(); setNow((e.clientX - r.left) / r.width * DUR, true); }
+ov.addEventListener('click', ovSeek);
+document.addEventListener('keydown', e => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); playBtn.click(); } });
+window.addEventListener('resize', () => { size(); });
+
+// ---- voice cards
+const groups = [
+  ['dove', 'Dove Man'], ['dino', 'Dinosaurs'], ['boeing', 'Boeing'], ['godzilla', 'Godzilla'],
+  ['inner', 'Inner circle — 7 mannequins'], ['outer', 'Outer circle — 7 mannequins'], ['camel', 'Camels'], ['birds', 'Flocks'], ['cars', 'Falling cars']];
+const host = document.getElementById('voices');
+const openGroups = new Set();
+function seg(v, onChange) {
+  const s = document.createElement('span'); s.className = 'seg';
+  for (const m of ['tone', 'rhythm']) { const b = document.createElement('button'); b.type = 'button'; b.textContent = m; b.className = m === 'tone' ? 't' : 'r';
+    b.setAttribute('aria-pressed', String(v.mode === m)); b.addEventListener('click', () => onChange(m)); s.appendChild(b); }
+  return s;
+}
+function swatch(cnv, list) {
+  const d = 2; cnv.width = 54 * d; cnv.height = 40 * d; const g = cnv.getContext('2d'); g.setTransform(d, 0, 0, d, 0, 0);
+  g.fillStyle = C.paper; g.fillRect(0, 0, 54, 40);
+  const v = list[0]; const ev = v.events; const s0 = ev.length ? ev[Math.floor(ev.length / 2)][0] : DUR / 2;
+  const span = v.group === 'cars' ? 260 : v.group === 'godzilla' ? 30 : v.mode === 'tone' ? 600 : 24;
+  const keep = pxPerMin; pxPerMin = 54 / (span / 60);
+  const rr = list.flatMap(x => x.events.slice(firstAt(x.events, s0), firstAt(x.events, s0 + span)).map(e => e[1]));
+  const rmid = v.group === 'dove' ? 0 : (rr.length ? rr[Math.floor(rr.length / 2)] : 100);
+  const X = s => (s - s0) / span * 54, Y = r => 20 + (Math.sqrt(Math.max(0, rmid)) - Math.sqrt(Math.max(0, r))) * 3;
+  for (const x of list) drawVoice(g, x, s0, s0 + span, X, Y, 1);
+  pxPerMin = keep;
+}
+function refresh() { persist(); buildChips(); drawOverviewBase(); draw(); drawOverview(); renderCards(); }
+function renderCards() {
+  host.innerHTML = '';
+  for (const [gid, gname] of groups) {
+    const list = V.filter(v => v.group === gid); if (!list.length) continue;
+    const card = document.createElement('div'); card.className = 'voice';
+    const cnv = document.createElement('canvas'); cnv.setAttribute('aria-hidden', 'true'); card.appendChild(cnv);
+    const nm = document.createElement('div'); nm.className = 'nm'; nm.innerHTML = `<span>${gname}</span>`;
+    if (list.length > 1) nm.innerHTML += `<span class="count">${list.length} voices</span>`;
+    card.appendChild(nm);
+    const what = document.createElement('div'); what.className = 'what'; what.textContent = list[0].what.replace(/^[\d.]+ m — /, ''); card.appendChild(what);
+    const row = document.createElement('div'); row.className = 'row';
+    const mixed = new Set(list.map(v => v.mode)).size > 1;
+    const proxy = { mode: mixed ? '' : list[0].mode };
+    row.appendChild(seg(proxy, m => { list.forEach(v => v.mode = m); refresh(); }));
+    const mute = document.createElement('button'); mute.type = 'button'; mute.className = 'mute';
+    const allHidden = list.every(v => v.hidden); mute.textContent = allHidden ? 'hidden' : 'hide'; mute.setAttribute('aria-pressed', String(allHidden));
+    mute.addEventListener('click', () => { const h = !list.every(v => v.hidden); list.forEach(v => v.hidden = h); refresh(); });
+    row.appendChild(mute);
+    if (list.some(v => v.mode !== v.defaultMode)) { const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'mute'; rs.textContent = 'reset';
+      rs.addEventListener('click', () => { list.forEach(v => v.mode = v.defaultMode); refresh(); }); row.appendChild(rs); }
+    card.appendChild(row);
+    if (list.length > 1) {
+      const det = document.createElement('details'); det.className = 'members';
+      det.innerHTML = `<summary>each one on its own${mixed ? ' (mixed)' : ''}</summary>`;
+      for (const v of list) {
+        const m = document.createElement('div'); m.className = 'm';
+        const sz = v.what.match(/^([\d.]+ m)/); m.innerHTML = `<span>${v.name}${sz ? ' · ' + sz[1] : ''}</span>`;
+        m.appendChild(seg(v, mode => { v.mode = mode; openGroups.add(gid); refresh(); }));
+        det.appendChild(m);
+      }
+      det.open = openGroups.has(gid);
+      det.addEventListener('toggle', () => { det.open ? openGroups.add(gid) : openGroups.delete(gid); });
+      card.appendChild(det);
+    }
+    host.appendChild(card);
+    swatch(cnv, list.filter(v => !v.hidden).length ? list.filter(v => !v.hidden) : list);
+  }
+}
+
+document.getElementById('foot').textContent =
+  `Recorded ${D.meta.recorded.replace('_', ' ')} in Godot · ${Math.round(DUR / 60)} min · ` +
+  `${V.find(v => v.id === 'godzilla').events.length} Godzilla footfalls · ${V.find(v => v.id === 'cars').events.length} cars · ` +
+  `${V.filter(v => v.group === 'inner' || v.group === 'outer').reduce((a, v) => a + v.events.length, 0)} mannequin steps · ` +
+  `${Math.max(...V.find(v => v.id === 'birds').count)} birds at the end`;
+
+renderCards(); buildChips();
+const start = () => { size(); setNow(store.get('dm-score-now', 0), true); };
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(start); else start();
+window.addEventListener('pagehide', () => store.set('dm-score-now', now));
+})();
+</script>
