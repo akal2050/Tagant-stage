@@ -15,5 +15,5 @@
 Open the repo's Releases › *latest* in Safari › tap `TagantStage.ipa` › Share › SideStore.
 Refresh in SideStore every 7 days.
 
-## Commands (panel → stage)
+## Commands (panel → stage), assembly edition: song:N water cam:N hud quality:N lang:en/ar rec play stop
 `creature:N` · `sky:N` · `mic:on|off` · `rec:start|stop` · `play:last` · `stop`

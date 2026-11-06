@@ -255,128 +255,139 @@ final class GodotLink {
     }
 }
 
-// MARK: - Control panel (iPad side)
+// MARK: - Control panel (iPad side) — built from the layout Godot sends ("ui:{json}")
 
 final class ControlPanel: UIView {
     private let link: GodotLink
+    private let titleLabel = UILabel()
     private let status = UILabel()
+    private let sceneStatus = UILabel()
     private let takesLabel = UILabel()
     private let levelBar = UIProgressView(progressViewStyle: .bar)
-    private let recButton = UIButton(type: .system)
-    private var creatureButtons: [UIButton] = []
-    private var recording = false
-    private var stack = UIStackView()
+    private let stack = UIStackView()
+    private let scroll = UIScrollView()
+    private var tv = false
+    private var ui: [String: Any] = [:]
+    private var gotUI = false
+    private var helloTimer: Timer?
+
+    private let accent = UIColor(red: 0.62, green: 0.84, blue: 0.98, alpha: 1)
+    private let terracotta = UIColor(red: 0.85, green: 0.55, blue: 0.40, alpha: 1)
 
     init(link: GodotLink) {
         self.link = link
         super.init(frame: .zero)
-        backgroundColor = UIColor(white: 0.06, alpha: 0.96)
-        build()
-    }
-    required init?(coder: NSCoder) { fatalError() }
-
-    private func makeButton(_ title: String, _ action: @escaping () -> Void) -> UIButton {
-        var cfg = UIButton.Configuration.bordered()
-        cfg.title = title
-        cfg.baseForegroundColor = UIColor(red: 0.62, green: 0.84, blue: 0.98, alpha: 1)
-        cfg.baseBackgroundColor = UIColor(white: 1, alpha: 0.07)
-        cfg.cornerStyle = .small
-        cfg.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 18, bottom: 12, trailing: 18)
-        let b = UIButton(configuration: cfg, primaryAction: UIAction { _ in action() })
-        b.titleLabel?.font = .monospacedSystemFont(ofSize: 17, weight: .medium)
-        return b
-    }
-
-    private func row(_ views: [UIView]) -> UIStackView {
-        let r = UIStackView(arrangedSubviews: views)
-        r.axis = .horizontal
-        r.spacing = 12
-        r.distribution = .fillEqually
-        return r
-    }
-
-    private func build() {
-        let title = UILabel()
-        title.text = "TAGANT · STAGE REMOTE"
-        title.font = .monospacedSystemFont(ofSize: 15, weight: .semibold)
-        title.textColor = UIColor(white: 0.85, alpha: 1)
-
-        status.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
-        status.textColor = UIColor(red: 0.85, green: 0.55, blue: 0.40, alpha: 1)
-
-        let names = ["Myna", "Dove", "Camel", "Frog", "Goat"]
-        creatureButtons = names.enumerated().map { i, n in
-            makeButton(n) { [weak self] in self?.select(creature: i) }
-        }
-
-        let colours = row([
-            makeButton("Dawn") { [weak self] in self?.link.send("sky:0") },
-            makeButton("Noon") { [weak self] in self?.link.send("sky:1") },
-            makeButton("Dusk") { [weak self] in self?.link.send("sky:2") },
-            makeButton("Night") { [weak self] in self?.link.send("sky:3") },
-        ])
-
-        recButton.configuration = makeButton("● Record") {}.configuration
-        recButton.addAction(UIAction { [weak self] _ in self?.toggleRecord() }, for: .touchUpInside)
-        let transport = row([
-            makeButton("Mic on") { [weak self] in self?.link.send("mic:on") },
-            makeButton("Mic off") { [weak self] in self?.link.send("mic:off") },
-            recButton,
-            makeButton("▶ Hear last take") { [weak self] in self?.link.send("play:last") },
-            makeButton("■ Stop") { [weak self] in self?.link.send("stop") },
-        ])
-
-        levelBar.progressTintColor = UIColor(red: 0.62, green: 0.84, blue: 0.98, alpha: 1)
-        levelBar.trackTintColor = UIColor(white: 1, alpha: 0.08)
-        takesLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        takesLabel.textColor = UIColor(white: 0.6, alpha: 1)
-        takesLabel.text = "takes: 0"
-
-        stack = UIStackView(arrangedSubviews: [title, status, row(creatureButtons), colours, transport, levelBar, takesLabel])
+        backgroundColor = UIColor(white: 0.06, alpha: 0.97)
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(scroll)
         stack.axis = .vertical
         stack.spacing = 14
         stack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(stack)
+        scroll.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor, constant: 28),
-            stack.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor, constant: -28),
-            stack.centerYAnchor.constraint(equalTo: centerYAnchor),
-            levelBar.heightAnchor.constraint(equalToConstant: 8),
+            scroll.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
+            scroll.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 28),
+            stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -28),
+            stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 20),
+            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -20),
+            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -56),
         ])
-        setMode(tv: false)
-        select(creature: 0)
+        titleLabel.font = .monospacedSystemFont(ofSize: 17, weight: .semibold)
+        titleLabel.textColor = UIColor(white: 0.9, alpha: 1)
+        titleLabel.text = "TAGANT"
+        status.font = .systemFont(ofSize: 14)
+        status.textColor = terracotta
+        status.numberOfLines = 0
+        sceneStatus.font = .systemFont(ofSize: 16, weight: .medium)
+        sceneStatus.textColor = UIColor(white: 0.95, alpha: 1)
+        sceneStatus.numberOfLines = 0
+        levelBar.progressTintColor = accent
+        levelBar.trackTintColor = UIColor(white: 1, alpha: 0.08)
+        levelBar.heightAnchor.constraint(equalToConstant: 8).isActive = true
+        takesLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        takesLabel.textColor = UIColor(white: 0.6, alpha: 1)
+
+        AVAudioApplication.requestRecordPermission { _ in }
+        // Ask Godot for the layout until it answers (it may start after us).
+        helloTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] t in
+            guard let self else { t.invalidate(); return }
+            if self.gotUI { t.invalidate(); return }
+            self.link.send("hello")
+        }
+        rebuild()
     }
+    required init?(coder: NSCoder) { fatalError() }
 
     func setMode(tv: Bool) {
-        status.text = tv ? "TV / projector connected — stage is on the big screen"
-                         : "No TV detected — stage shown here. Plug in HDMI."
-        // Compact strip when there is no TV: hide the less important rows.
-        for (i, v) in stack.arrangedSubviews.enumerated() where i == 0 || i == 3 || i == 6 {
-            v.isHidden = !tv
-        }
+        self.tv = tv
+        rebuild()
     }
 
-    private func select(creature i: Int) {
-        link.send("creature:\(i)")
-        for (j, b) in creatureButtons.enumerated() {
-            b.configuration?.baseBackgroundColor = j == i ? UIColor(red: 0.62, green: 0.84, blue: 0.98, alpha: 0.28)
-                                                          : UIColor(white: 1, alpha: 0.07)
+    private func makeButton(_ title: String, on: Bool, id: String) -> UIButton {
+        var cfg = UIButton.Configuration.bordered()
+        cfg.title = title
+        cfg.baseForegroundColor = on ? UIColor.black : accent
+        cfg.baseBackgroundColor = on ? accent : UIColor(white: 1, alpha: 0.07)
+        cfg.cornerStyle = .small
+        cfg.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14)
+        cfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { a in
+            var a = a; a.font = UIFont.systemFont(ofSize: 17, weight: .medium); return a
         }
+        let b = UIButton(configuration: cfg, primaryAction: UIAction { [weak self] _ in self?.link.send(id) })
+        b.titleLabel?.numberOfLines = 2
+        b.titleLabel?.adjustsFontSizeToFitWidth = true
+        return b
     }
 
-    private func toggleRecord() {
-        if recording {
-            link.send("rec:stop")
-        } else {
-            requestMic { [weak self] ok in
-                guard ok else { self?.status.text = "Microphone not allowed — Settings › Tagant Stage › Microphone"; return }
-                self?.link.send("rec:start")
+    private func header(_ t: String) -> UILabel {
+        let l = UILabel()
+        l.text = t.uppercased()
+        l.font = .systemFont(ofSize: 12, weight: .semibold)
+        l.textColor = UIColor(white: 0.55, alpha: 1)
+        return l
+    }
+
+    private func rebuild() {
+        for v in stack.arrangedSubviews { stack.removeArrangedSubview(v); v.removeFromSuperview() }
+        let rtl = (ui["rtl"] as? Bool) ?? false
+        semanticContentAttribute = rtl ? .forceRightToLeft : .forceLeftToRight
+        stack.semanticContentAttribute = semanticContentAttribute
+        titleLabel.text = (ui["title"] as? String) ?? "TAGANT"
+        titleLabel.textAlignment = rtl ? .right : .left
+        status.text = tv ? ((ui["tv"] as? String) ?? "TV connected") : ((ui["no_tv"] as? String) ?? "No TV — plug in HDMI")
+        status.textAlignment = titleLabel.textAlignment
+        sceneStatus.textAlignment = titleLabel.textAlignment
+        takesLabel.text = (ui["takes"] as? String) ?? ""
+        if tv { stack.addArrangedSubview(titleLabel) }
+        stack.addArrangedSubview(status)
+        if tv { stack.addArrangedSubview(sceneStatus) }
+        let sections = (ui["sections"] as? [[String: Any]]) ?? []
+        for sec in sections {
+            if !tv && !((sec["compact"] as? Bool) ?? false) { continue }
+            if tv { stack.addArrangedSubview(header((sec["title"] as? String) ?? "")) }
+            let buttons = (sec["buttons"] as? [[String: Any]]) ?? []
+            let perRow = tv ? 6 : 8
+            var i = 0
+            while i < buttons.count {
+                let slice = buttons[i..<min(i + perRow, buttons.count)]
+                let row = UIStackView(arrangedSubviews: slice.map {
+                    makeButton(($0["label"] as? String) ?? "?", on: ($0["on"] as? Bool) ?? false, id: ($0["id"] as? String) ?? "")
+                })
+                row.axis = .horizontal
+                row.spacing = 10
+                row.distribution = .fillEqually
+                row.semanticContentAttribute = semanticContentAttribute
+                stack.addArrangedSubview(row)
+                i += perRow
             }
         }
-    }
-
-    private func requestMic(_ done: @escaping (Bool) -> Void) {
-        AVAudioApplication.requestRecordPermission { ok in DispatchQueue.main.async { done(ok) } }
+        if tv {
+            stack.addArrangedSubview(levelBar)
+            stack.addArrangedSubview(takesLabel)
+        }
     }
 
     func handle(godotMessage msg: String) {
@@ -384,19 +395,16 @@ final class ControlPanel: UIView {
         guard let key = parts.first else { return }
         let val = parts.count > 1 ? parts[1] : ""
         switch key {
+        case "ui":
+            if let d = val.data(using: .utf8), let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] {
+                ui = obj
+                gotUI = true
+                rebuild()
+            }
         case "level":
             levelBar.setProgress(Float(val) ?? 0, animated: false)
-        case "rec":
-            recording = (val == "on")
-            var cfg = recButton.configuration
-            cfg?.title = recording ? "■ Stop rec" : "● Record"
-            cfg?.baseForegroundColor = recording ? UIColor(red: 1, green: 0.4, blue: 0.35, alpha: 1)
-                                                 : UIColor(red: 0.62, green: 0.84, blue: 0.98, alpha: 1)
-            recButton.configuration = cfg
-        case "takes":
-            takesLabel.text = "takes: \(val)"
-        case "info":
-            takesLabel.text = val
+        case "status":
+            sceneStatus.text = val
         default:
             break
         }
