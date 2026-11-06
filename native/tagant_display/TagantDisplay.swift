@@ -89,6 +89,8 @@ final class TagantDisplay {
     private let link = GodotLink()
     private var setupTimer: Timer?
     private var accessoryRegistered = false
+    private var stageReady = false              // true a few seconds after Godot's first frames
+    private var pendingScene: UIWindowScene?    // a TV that connected before the stage was ready
 
     func start() {
         UIApplication.shared.isIdleTimerDisabled = true
@@ -138,13 +140,29 @@ final class TagantDisplay {
 
         registerAccessoryIfAvailable(on: win.rootViewController ?? vc)
 
+        // Give the world time to load before touching the TV (heavy scenes load on the main thread).
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.attachPendingIfAny()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) { [weak self] in
+            self?.stageReady = true
+            self?.attachPendingIfAny()
+        }
+        return true
+    }
+
+    private func attachPendingIfAny() {
+        guard stageReady else { return }
+        if let ws = pendingScene, ws.activationState != .unattached {
+            attach(to: ws)
+            return
+        }
         // iOS 26 and earlier: the external scene may already be connected.
         for sc in UIApplication.shared.connectedScenes {
-            if let ws = sc as? UIWindowScene, ws.session.role == .windowExternalDisplayNonInteractive {
+            if let ws = sc as? UIWindowScene, ws.session.role == .windowExternalDisplayNonInteractive, externalScene == nil {
                 attach(to: ws)
             }
         }
-        return true
     }
 
     private func registerAccessoryIfAvailable(on vc: UIViewController) {
@@ -161,7 +179,14 @@ final class TagantDisplay {
     }
 
     func attach(to ws: UIWindowScene) {
-        guard externalScene !== ws, let vc = godotVC else { return }
+        // Never move the stage while Godot is still starting / loading the world:
+        // remember the TV and attach once the stage is ready.
+        guard stageReady, UIApplication.shared.applicationState == .active, let vc = godotVC else {
+            pendingScene = ws
+            return
+        }
+        guard externalScene !== ws else { return }
+        pendingScene = nil
         let host = StageHostViewController()
         let w = UIWindow(windowScene: ws)
         w.rootViewController = host
@@ -184,6 +209,7 @@ final class TagantDisplay {
     }
 
     func detach(from scene: UIScene) {
+        if pendingScene === scene { pendingScene = nil }
         guard let ws = externalScene, ws === scene else { return }
         if let vc = godotVC, let sup = originalSuperview {
             let stage = vc.view!
