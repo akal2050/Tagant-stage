@@ -1,0 +1,13 @@
+{
+  "seed": 710714,
+  "wanderers": 16,
+  "bands": 3,
+  "height_m": [3.8, 6.5],
+  "band_radius_m": [105.0, 160.0, 215.0],
+  "walk_speed_per_height": 0.22,
+  "run_speed_per_height": 0.70,
+  "band_change_s": [24.0, 52.0],
+  "panic_s": [9.0, 18.0],
+  "palette": [[0.24, 0.16, 0.10], [0.35, 0.27, 0.18], [0.16, 0.15, 0.13], [0.48, 0.40, 0.29]],
+  "notes": "Fourteen existing pilgrims plus sixteen wanderers = thirty hybrids. Each pilgrim keeps its own inherited circular path. H cycles band inspection views, then returns to the director."
+}

@@ -1,0 +1,5 @@
+09:43:47 OK car_peugeot504 13.1 MB (32 images shrunk) {'anims': [], 'meshes': 12, 'skins': 0, 'images': 32}
+09:44:01 OK car_pickup 2.2 MB (18 images shrunk) {'anims': [], 'meshes': 23, 'skins': 0, 'images': 18}
+09:44:08 OK car_landcruiser 4.6 MB (4 images shrunk) {'anims': [], 'meshes': 4, 'skins': 0, 'images': 4}
+09:44:13 OK palm 38.7 MB (33 images shrunk) {'anims': [], 'meshes': 25, 'skins': 0, 'images': 33}
+09:44:13 ALL DONE

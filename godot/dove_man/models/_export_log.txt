@@ -1,0 +1,12 @@
+09:37:20 OK camel_rock 8.9 MB {'anims': [], 'meshes': 1, 'skins': 0, 'images': 0}
+09:37:29 OK godzilla 12.5 MB {'anims': [('Walk', 468)], 'meshes': 3, 'skins': 1, 'images': 9}
+09:39:48 OK dino 40.8 MB {'anims': [('Graze', 5)], 'meshes': 5, 'skins': 0, 'images': 6}
+09:39:51 OK pigeon 0.3 MB {'anims': [('BirdRig|Flapping', 411)], 'meshes': 1, 'skins': 1, 'images': 1}
+09:39:59 OK palm 57.6 MB {'anims': [], 'meshes': 25, 'skins': 0, 'images': 33}
+09:40:01 OK mannequin 8.3 MB {'anims': [], 'meshes': 1, 'skins': 0, 'images': 3}
+09:40:01 OK boeing 0.4 MB {'anims': [], 'meshes': 11, 'skins': 0, 'images': 0}
+09:40:04 OK dove 28.4 MB {'anims': [], 'meshes': 1, 'skins': 0, 'images': 0}
+09:40:57 OK car_peugeot504 335.5 MB {'anims': [], 'meshes': 12, 'skins': 0, 'images': 32}
+09:41:03 OK car_pickup 172.3 MB {'anims': [], 'meshes': 23, 'skins': 0, 'images': 18}
+09:41:14 OK car_landcruiser 40.0 MB {'anims': [], 'meshes': 4, 'skins': 0, 'images': 4}
+09:41:15 ALL DONE
