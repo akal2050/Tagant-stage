@@ -40,7 +40,7 @@ final class TagantExternalSceneDelegate: UIResponder, UIWindowSceneDelegate {
 final class StageHostViewController: UIViewController {
     weak var stageView: UIView?
     /// Max width in real pixels that Godot renders on the TV (keeps the A16 cool on 4K screens).
-    var maxPixelWidth: CGFloat = 1920
+    var maxPixelWidth: CGFloat = 1600
 
     override func loadView() {
         let v = UIView()
@@ -73,6 +73,25 @@ final class StageHostViewController: UIViewController {
 
 // MARK: - Manager
 
+// Breadcrumbs: each step is written to Documents/tagant_trail.txt *before* it happens.
+// If the app dies, the next launch shows where it stopped, on the iPad remote.
+enum Trail {
+    static var url: URL { FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("tagant_trail.txt") }
+    static var previous: String = ""
+    static func begin() {
+        previous = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        try? "".write(to: url, atomically: true, encoding: .utf8)
+        mark("launch")
+    }
+    static func mark(_ s: String) {
+        let line = "\(Date().timeIntervalSince1970.rounded()) \(s)\n"
+        if let h = try? FileHandle(forWritingTo: url) {
+            h.seekToEndOfFile(); h.write(line.data(using: .utf8)!); try? h.synchronize(); try? h.close()
+        } else { try? line.write(to: url, atomically: true, encoding: .utf8) }
+    }
+    static func markCleanExit() { mark("ok") }
+}
+
 final class TagantDisplay {
     static let shared = TagantDisplay()
 
@@ -93,7 +112,9 @@ final class TagantDisplay {
     private var pendingScene: UIWindowScene?    // a TV that connected before the stage was ready
 
     func start() {
+        Trail.begin()
         UIApplication.shared.isIdleTimerDisabled = true
+        NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in Trail.markCleanExit() }
 
         NotificationCenter.default.addObserver(forName: UIScene.willConnectNotification, object: nil, queue: .main) { [weak self] note in
             guard let ws = note.object as? UIWindowScene else { return }
@@ -131,6 +152,7 @@ final class TagantDisplay {
         mainScale = win.screen.scale
         originalSuperview = vc.view.superview
 
+        Trail.mark("godot view ready")
         let p = ControlPanel(link: link)
         p.translatesAutoresizingMaskIntoConstraints = true
         p.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -187,6 +209,7 @@ final class TagantDisplay {
         }
         guard externalScene !== ws else { return }
         pendingScene = nil
+        Trail.mark("attach TV \(Int(ws.screen.bounds.width))x\(Int(ws.screen.bounds.height)) scale \(ws.screen.scale)")
         let host = StageHostViewController()
         let w = UIWindow(windowScene: ws)
         w.rootViewController = host
@@ -205,6 +228,7 @@ final class TagantDisplay {
         host.layoutStage()
 
         layoutPanel()
+        Trail.mark("attached")
         link.send("screen:tv")
     }
 
@@ -289,6 +313,8 @@ final class ControlPanel: UIView {
     private let status = UILabel()
     private let sceneStatus = UILabel()
     private let takesLabel = UILabel()
+    private let diagLabel = UILabel()
+    private var godotDiag = ""
     private let levelBar = UIProgressView(progressViewStyle: .bar)
     private let stack = UIStackView()
     private let scroll = UIScrollView()
@@ -336,6 +362,9 @@ final class ControlPanel: UIView {
         takesLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
         takesLabel.textColor = UIColor(white: 0.6, alpha: 1)
 
+        diagLabel.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+        diagLabel.textColor = UIColor(red: 1, green: 0.6, blue: 0.5, alpha: 1)
+        diagLabel.numberOfLines = 0
         AVAudioApplication.requestRecordPermission { _ in }
         // Ask Godot for the layout until it answers (it may start after us).
         helloTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] t in
@@ -414,6 +443,17 @@ final class ControlPanel: UIView {
             stack.addArrangedSubview(levelBar)
             stack.addArrangedSubview(takesLabel)
         }
+        // If the last run did not end cleanly, show where it stopped (for a photo to send).
+        let prev = Trail.previous.trimmingCharacters(in: .whitespacesAndNewlines)
+        var diag = ""
+        if !prev.isEmpty && !prev.hasSuffix("ok") {
+            diag = "LAST RUN STOPPED — app: " + prev.split(separator: "\n").suffix(4).map { String($0.split(separator: " ", maxSplits: 1).last ?? "") }.joined(separator: " › ")
+        }
+        if !godotDiag.isEmpty { diag += (diag.isEmpty ? "" : "\n") + "stage: " + godotDiag }
+        if !diag.isEmpty {
+            diagLabel.text = diag
+            stack.addArrangedSubview(diagLabel)
+        }
     }
 
     func handle(godotMessage msg: String) {
@@ -431,6 +471,9 @@ final class ControlPanel: UIView {
             levelBar.setProgress(Float(val) ?? 0, animated: false)
         case "status":
             sceneStatus.text = val
+        case "diag":
+            godotDiag = val
+            rebuild()
         default:
             break
         }

@@ -37,6 +37,25 @@ func _ready() -> void:
 	await get_tree().process_frame
 	_find_world()
 	send_ui()
+	_send_previous_log()
+
+
+# The tail of the previous run's log (errors only), shown small on the remote.
+func _send_previous_log() -> void:
+	var d := DirAccess.open("user://logs")
+	if d == null:
+		return
+	var files := Array(d.get_files()).filter(func(f): return f.ends_with(".log") and f != "godot.log")
+	if files.is_empty():
+		return
+	files.sort()
+	var txt := FileAccess.get_file_as_string("user://logs/" + files[-1])
+	var errs: Array = []
+	for l in txt.split("\n"):
+		if l.begins_with("ERROR") or l.begins_with("SCRIPT ERROR") or l.contains("crash") or l.contains("CrashHandler"):
+			errs.append(l.substr(0, 140))
+	if errs.size() > 0:
+		_send("diag:" + " | ".join(errs.slice(-3)))
 
 
 func _on_node_added(n: Node) -> void:

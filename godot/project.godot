@@ -22,6 +22,11 @@ general/ios/session_category=2
 
 IpadBridge="*res://ipad/ipad_bridge.gd"
 
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/max_log_files=6
+
 [display]
 
 window/handheld/orientation=4
