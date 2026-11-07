@@ -46,3 +46,9 @@ look (no GPU on the build machine), the iPad itself.
 - سِفْر الوَحِيش for the Bestiary; أيت وادو spelling; the Arabic of the wind names.
 - Whether the opening should also show the English gloss "The Chant of the Wind's Companions".
 - iPad: the TV mirrors the iPad (controls are visible on both). A tablet-only control surface is a later step.
+
+
+## Renamed by the artist (7 Nov 2026)
+- The first world is now shown as **THE SEVEN WORLDS / الأقاليم السبعة** (was THE SEVEN CIRCLES / الدوائر السبع).
+  Display name only (lexicon/lexicon.json: worlds.circles.title, ui_circles.title); the internal id stays "circles".
+  "salt circles / دوائر الملح" in its description is unchanged (it names the salt circles on the stage).
