@@ -19,9 +19,14 @@ general/ios/session_category=2
 
 [autoload]
 
+Diag="*res://start/diag.gd"
 Lex="*res://start/lex.gd"
 Worlds="*res://start/worlds.gd"
 Remote="*res://start/remote.gd"
+
+[debug]
+
+file_logging/enable_file_logging=true
 
 [display]
 
@@ -41,9 +46,11 @@ renderer/rendering_method="mobile"
 renderer/rendering_method.mobile="mobile"
 rendering_device/fallback_to_opengl3=true
 lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/size.mobile=2048
 mesh_lod/lod_change/threshold_pixels=2.0
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=1
+anti_aliasing/quality/msaa_3d.mobile=0
 
 [shader_globals]
 

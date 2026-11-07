@@ -56,6 +56,7 @@ func enter(key: String, packed: PackedScene) -> void:
 	current = key
 	_refresh()
 	AudioServer.bus_count = 1
+	Diag.mark("entering " + key)
 	get_tree().change_scene_to_packed(packed)
 
 

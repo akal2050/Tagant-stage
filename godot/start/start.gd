@@ -1,7 +1,8 @@
 extends Control
 ## TAGANT / حداء خلان الريح — the opening text, then the two entrances.
-## All words come from res://lexicon/lexicon.json (Lex). The worlds load in the background while the
-## text is read; "Enter the forest" appears when they are ready (or a truthful error if they are not).
+## All words come from res://lexicon/lexicon.json (Lex). Only the world that is chosen is loaded
+## (the iPad cannot hold both worlds at once); a truthful error appears if it fails.
+## If the previous run stopped inside a world, a small red line on the opening says where (Diag).
 
 const SALT := Color(0.94, 0.94, 0.91)
 const RED := Color(0.95, 0.22, 0.12)
@@ -15,6 +16,9 @@ var page := "opening"
 var t := 0.0
 var loaded := {}
 var failed := false
+var pending := ""          # world being loaded after its card was tapped
+var w_status: Label
+var diag_lbl: Label
 
 var opening: VBoxContainer
 var o_title: Label
@@ -51,9 +55,17 @@ func _ready() -> void:
 	lang_btn.offset_top = 18
 	lang_btn.pressed.connect(_toggle_lang)
 	add_child(lang_btn)
-	for k in SCENES:
-		if ResourceLoader.load_threaded_request(SCENES[k]) != OK:
-			failed = true
+	diag_lbl = _label(f_latin, 15, 0.9)
+	diag_lbl.add_theme_color_override("font_color", RED)
+	diag_lbl.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	diag_lbl.offset_left = 30
+	diag_lbl.offset_right = -30
+	diag_lbl.offset_bottom = -8
+	diag_lbl.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	diag_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	diag_lbl.text = Diag.previous_problem()
+	add_child(diag_lbl)
+	Diag.mark("opening")
 	if Worlds.skip_opening:
 		page = "worlds"
 	_apply()
@@ -164,6 +176,8 @@ func _build_worlds() -> void:
 			v.add_child(l)
 		row.add_child(b)
 		cards[k] = [tl, sl, dl]
+	w_status = _label(f_latin, 20, 0.6)
+	worlds.add_child(w_status)
 	back_btn = _quiet_button(20)
 	back_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back_btn.pressed.connect(func(): page = "opening"; _apply())
@@ -188,7 +202,7 @@ func _apply() -> void:
 	o_question.text = Lex.get_text("opening", "question", ar)
 	o_func.text = Lex.get_text("opening", "functional", ar)
 	enter_btn.text = Lex.get_text("opening", "enter", ar)
-	for l in [o_body, o_question, o_func, o_status]:
+	for l in [o_body, o_question, o_func, o_status, w_status]:
 		l.add_theme_font_override("font", body_font)
 	o_body.add_theme_font_size_override("font_size", 27 if ar else 23)
 	o_question.add_theme_font_size_override("font_size", 32 if ar else 27)
@@ -217,21 +231,26 @@ func _status() -> void:
 		o_status.text = Lex.get_text("opening", "load_error", ar)
 		enter_btn.visible = false
 		return
-	var ready := loaded.size() == SCENES.size() and t >= MIN_READ
+	var ready := t >= MIN_READ
 	enter_btn.visible = ready
 	o_status.text = "" if ready else Lex.get_text("opening", "loading", ar)
 
 
 func _process(delta: float) -> void:
 	t += delta
-	for k in SCENES:
-		if loaded.has(k):
-			continue
-		var st := ResourceLoader.load_threaded_get_status(SCENES[k])
+	if pending != "" and not loaded.has(pending):
+		var st := ResourceLoader.load_threaded_get_status(SCENES[pending])
 		if st == ResourceLoader.THREAD_LOAD_LOADED:
-			loaded[k] = ResourceLoader.load_threaded_get(SCENES[k])
+			loaded[pending] = ResourceLoader.load_threaded_get(SCENES[pending])
+			Diag.mark("loaded " + pending)
+			var k := pending
+			pending = ""
+			Worlds.enter(k, loaded[k])
+			return
 		elif st == ResourceLoader.THREAD_LOAD_FAILED or st == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			failed = true
+			Diag.mark("load failed " + pending)
+			pending = ""
+			w_status.text = Lex.get_text("opening", "load_error", _ar())
 	if page == "opening":
 		_status()
 
@@ -247,6 +266,11 @@ func _go_worlds() -> void:
 
 
 func _open(k: String) -> void:
-	if not loaded.has(k):
+	if pending != "" or not SCENES.has(k):
 		return
-	Worlds.enter(k, loaded[k])
+	Diag.mark("loading " + k)
+	if ResourceLoader.load_threaded_request(SCENES[k]) != OK:
+		w_status.text = Lex.get_text("opening", "load_error", _ar())
+		return
+	pending = k
+	w_status.text = Lex.get_text("opening", "loading", _ar())

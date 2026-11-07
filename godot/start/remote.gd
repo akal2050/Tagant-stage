@@ -85,6 +85,8 @@ func describe() -> Dictionary:
 				b.append(_btn("enter", st.enter_btn.text))
 			d.sections.append({"title": st.o_sub.text, "big": true, "buttons": b})
 			d.status = st.o_status.text
+			if st.diag_lbl and st.diag_lbl.text != "":
+				d.status += ("\n" if d.status != "" else "") + st.diag_lbl.text
 		else:
 			d.title = st.w_heading.text
 			var b: Array = []
@@ -96,6 +98,7 @@ func describe() -> Dictionary:
 				b.append(_btn("world:" + k, l))
 			d.sections.append({"title": "", "big": true, "cols": 2, "buttons": b})
 			d.sections.append({"title": "", "cols": 2, "buttons": [_btn("opening", st.back_btn.text)]})
+			d.status = st.w_status.text
 		d.sections.append({"title": "", "cols": 2, "buttons": [_btn("lang", st.lang_btn.text)]})
 		return d
 	if u == null:
