@@ -5,8 +5,11 @@ extends Node
 ## so a photo of the opening is enough to know what happened.
 
 const TRAIL := "user://trail.txt"
+const SKIP := "user://skip.txt"
 var prev: Array = []
+var skip: Array = []
 var _t := 0.0
+var _frames := -1
 
 
 func _ready() -> void:
@@ -15,10 +18,29 @@ func _ready() -> void:
 	for l in old.split("\n"):
 		if l.strip_edges() != "":
 			prev.append(l)
+	for l in FileAccess.get_file_as_string(SKIP).split("\n"):
+		if l.strip_edges() != "":
+			skip.append(l.strip_edges())
+	# the run before stopped while building a piece of a world: leave that piece out from now on
+	if not prev.is_empty():
+		var last: String = String(prev[-1]).split(" | ")[0]
+		if last.begins_with("build ") or last.begins_with("spawn "):
+			var piece := last.split(" ", true, 1)[1]
+			if not skip.has(piece):
+				skip.append(piece)
+				var sf := FileAccess.open(SKIP, FileAccess.WRITE)
+				if sf:
+					sf.store_string("\n".join(PackedStringArray(skip)))
+					sf.close()
 	var f := FileAccess.open(TRAIL, FileAccess.WRITE)
 	if f:
 		f.close()
 	mark("launch")
+
+
+## true if this piece made the app stop before (it is then left out).
+func skipped(piece: String) -> bool:
+	return skip.has(piece)
 
 
 func _mem() -> String:
@@ -44,6 +66,12 @@ func _notification(n: int) -> void:
 
 
 func _process(delta: float) -> void:
+	if Worlds.current == "":
+		_frames = -1
+	elif _frames >= 0 and _frames < 4:
+		_frames += 1
+		if _frames == 3:
+			mark("first frames " + Worlds.current)
 	_t += delta
 	if _t >= 5.0 and Worlds.current != "":
 		_t = 0.0
@@ -53,11 +81,13 @@ func _process(delta: float) -> void:
 ## "" if the last run ended normally; otherwise one or two short lines for the opening page.
 func previous_problem() -> String:
 	if prev.is_empty():
-		return ""
+		return ("Left out now: " + ", ".join(PackedStringArray(skip))) if not skip.is_empty() else ""
 	var last: String = prev[-1]
 	if last.begins_with("paused") or last.begins_with("opening") or last.begins_with("launch"):
-		return ""
+		return ("Left out now: " + ", ".join(PackedStringArray(skip))) if not skip.is_empty() else ""
 	var txt := "Last time the app stopped:  " + last
+	if not skip.is_empty():
+		txt += "\nLeft out now: " + ", ".join(PackedStringArray(skip))
 	var errs := _log_errors()
 	if errs != "":
 		txt += "\n" + errs
@@ -77,3 +107,9 @@ func _log_errors() -> String:
 		if l.begins_with("ERROR") or l.begins_with("SCRIPT ERROR") or l.contains("CrashHandler") or l.contains("signal "):
 			lines.append(l.substr(0, 110))
 	return " | ".join(PackedStringArray(lines.slice(-3)))
+
+
+## called by a world once it is built: the next frames are the first drawing on screen.
+func world_built() -> void:
+	mark("built " + Worlds.current)
+	_frames = 0

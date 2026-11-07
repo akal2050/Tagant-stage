@@ -73,19 +73,29 @@ func _mat(shader_path: String) -> ShaderMaterial:
 	return m
 
 
+## Each piece is noted before it is built; one that made the iPad stop is left out next time (Diag).
+func _piece(n: String) -> void:
+	var d = get_node_or_null("/root/Diag")
+	if d:
+		if d.skipped(n):
+			return
+		d.mark("build " + n)
+	call(n)
+
+
 func build() -> void:
-	_env()
-	_lights()
-	_floor()
-	_rings()
-	_clay_lines()
-	_oil()
-	_cylinders()
-	_sand_and_dunes()
-	_lawn()
-	_gardens()
-	_grass_tufts()
-	_backstage()
+	_piece("_env")
+	_piece("_lights")
+	_piece("_floor")
+	_piece("_rings")
+	_piece("_clay_lines")
+	_piece("_oil")
+	_piece("_cylinders")
+	_piece("_sand_and_dunes")
+	_piece("_lawn")
+	_piece("_gardens")
+	_piece("_grass_tufts")
+	_piece("_backstage")
 	_dust()
 	_flock()
 
@@ -525,7 +535,8 @@ func _gardens() -> void:
 	add_child(gardens)
 	gardens.build(-SLAB)
 	cicada_anchor = gardens.cicada_anchor
-	cicada_anchor.add_child(_tap_body("cicadas", Vector3(0, 1.0, 0), Vector3(12, 3, 12)))
+	if cicada_anchor:
+		cicada_anchor.add_child(_tap_body("cicadas", Vector3(0, 1.0, 0), Vector3(12, 3, 12)))
 
 
 func _tap_body(id: String, pos: Vector3, size: Vector3) -> StaticBody3D:

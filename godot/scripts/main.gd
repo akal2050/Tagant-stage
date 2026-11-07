@@ -86,6 +86,9 @@ func _ready() -> void:
 	ui.apply_language()
 	select_animal("b1", false)
 	set_mode("Listen")
+	var dg = get_node_or_null("/root/Diag")
+	if dg:
+		dg.world_built()
 
 
 ## Real animals <-> imaginary bestiary: the same seven blocks, a different cast.
@@ -117,6 +120,14 @@ func _spawn(id: String) -> void:
 	if animals.has(id):
 		animals[id].queue_free()
 	var a: Dictionary = Catalog.by_id(id)
+	var d = get_node_or_null("/root/Diag")
+	if d and String(a.get("model", "")) != "":
+		var m := String(a.model).get_file()
+		if d.skipped(m):
+			a = a.duplicate()
+			a["model"] = ""
+		else:
+			d.mark("spawn " + m)
 	if typeof(a.slot) == TYPE_INT:
 		a["fit_r"] = Stage.cylinder_radius(a.slot)
 	var n = Animal.new()
