@@ -21,6 +21,7 @@ general/ios/session_category=2
 
 Lex="*res://start/lex.gd"
 Worlds="*res://start/worlds.gd"
+Remote="*res://start/remote.gd"
 
 [display]
 

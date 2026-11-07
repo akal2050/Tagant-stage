@@ -48,6 +48,7 @@ func enter(key: String, packed: PackedScene) -> void:
 	Catalog.choice = {}
 	HCatalog.set_section("aitwadu")
 	HCatalog.choice = {}
+	Lex.analysis = false      # every visitor starts in the simple view
 	if key == "circles":
 		Tr.lang = lang
 	else:

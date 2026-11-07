@@ -27,7 +27,8 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
 
-      # (the two-screen plugin in native/ is not used by this build: the iPad mirrors to the TV)
+      - name: Build native two-screen plugin (iPad = remote, TV = stage)
+        run: bash native/tagant_display/build.sh
 
       - name: Cache Godot
         id: godot-cache
@@ -81,11 +82,12 @@ jobs:
           name: TagantStage-ipa
           path: TagantStage.ipa
 
-      - name: Publish as the "latest" download
+      # The mirrored build stays on the "latest" download; this split build has its own.
+      - name: Publish as the "split" download
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: Tagant Stage — latest build
+          tag_name: split
+          name: TAGANT — two screens (iPad remote + TV stage)
           prerelease: true
           files: TagantStage.ipa
           body: |

@@ -9,6 +9,7 @@
 import UIKit
 import Network
 import AVFoundation
+import CoreText
 
 // MARK: - Entry point (called from shim.mm, which Godot's plugin loader calls at launch)
 
@@ -270,13 +271,10 @@ final class TagantDisplay {
     private func layoutPanel() {
         guard let p = panel, let win = mainWindow else { return }
         p.setMode(tv: tvConnected)
-        if tvConnected {
-            p.frame = win.bounds          // whole iPad = remote
-        } else {
-            let h: CGFloat = 230          // iPad alone: Godot on top, remote strip below
-            p.frame = CGRect(x: 0, y: win.bounds.height - h, width: win.bounds.width, height: h)
-        }
-        p.autoresizingMask = tvConnected ? [.flexibleWidth, .flexibleHeight] : [.flexibleWidth, .flexibleTopMargin]
+        // TV connected: the whole iPad is the remote. iPad alone: no panel, the karaoke is touched directly.
+        p.frame = win.bounds
+        p.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        p.isHidden = !tvConnected
         win.bringSubviewToFront(p)
     }
 }
@@ -318,14 +316,44 @@ final class GodotLink {
     }
 }
 
+// MARK: - Fonts of the laptop version (copied into the app bundle by the plugin)
+
+enum TFont {
+    static var registered: [String: String] = [:]      // file name -> PostScript name
+    static func register() {
+        guard registered.isEmpty, let root = Bundle.main.resourceURL else { return }
+        let fm = FileManager.default
+        guard let en = fm.enumerator(at: root, includingPropertiesForKeys: nil) else { return }
+        for case let u as URL in en where u.pathExtension.lowercased() == "ttf" {
+            let n = u.deletingPathExtension().lastPathComponent
+            guard ["Tektur", "Megrim", "Handjet"].contains(n) else { continue }
+            CTFontManagerRegisterFontsForURL(u as CFURL, .process, nil)
+            if let ds = CTFontManagerCreateFontDescriptorsFromURL(u as CFURL) as? [CTFontDescriptor], let d = ds.first,
+               let ps = CTFontDescriptorCopyAttribute(d, kCTFontNameAttribute) as? String {
+                registered[n] = ps
+            }
+        }
+    }
+    static func font(_ name: String, _ size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+        if let ps = registered[name], let f = UIFont(name: ps, size: size) { return f }
+        return .systemFont(ofSize: size, weight: weight)
+    }
+    static func isArabic(_ s: String) -> Bool {
+        s.unicodeScalars.contains { (0x0600...0x06FF).contains($0.value) || (0x0750...0x077F).contains($0.value) || (0xFB50...0xFEFF).contains($0.value) }
+    }
+    /// Body text: Tektur for Latin, Handjet for Arabic (as on the laptop).
+    static func body(_ s: String, _ size: CGFloat) -> UIFont { isArabic(s) ? font("Handjet", size * 1.2) : font("Tektur", size) }
+    /// Titles: Megrim for Latin, Handjet for Arabic.
+    static func title(_ s: String, _ size: CGFloat) -> UIFont { isArabic(s) ? font("Handjet", size * 1.1) : font("Megrim", size) }
+}
+
 // MARK: - Control panel (iPad side) — built from the layout Godot sends ("ui:{json}")
 
 final class ControlPanel: UIView {
     private let link: GodotLink
     private let titleLabel = UILabel()
-    private let status = UILabel()
+    private let tvLabel = UILabel()
     private let sceneStatus = UILabel()
-    private let takesLabel = UILabel()
     private let diagLabel = UILabel()
     private var godotDiag = ""
     private let levelBar = UIProgressView(progressViewStyle: .bar)
@@ -333,20 +361,25 @@ final class ControlPanel: UIView {
     private let scroll = UIScrollView()
     private var tv = false
     private var ui: [String: Any] = [:]
+    private var lastRaw = ""
     private var gotUI = false
     private var helloTimer: Timer?
 
-    private let accent = UIColor(red: 0.62, green: 0.84, blue: 0.98, alpha: 1)
-    private let terracotta = UIColor(red: 0.85, green: 0.55, blue: 0.40, alpha: 1)
+    // the laptop palette (ui.gd): salt on near-black, red for what is active
+    private let salt = UIColor(red: 0.94, green: 0.94, blue: 0.91, alpha: 1)
+    private let red = UIColor(red: 0.62, green: 0.04, blue: 0.03, alpha: 1)
+    private let ground = UIColor(red: 0.02, green: 0.01, blue: 0.01, alpha: 1)
 
     init(link: GodotLink) {
         self.link = link
         super.init(frame: .zero)
-        backgroundColor = UIColor(white: 0.06, alpha: 0.97)
+        TFont.register()
+        backgroundColor = ground
         scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.indicatorStyle = .white
         addSubview(scroll)
         stack.axis = .vertical
-        stack.spacing = 14
+        stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
         scroll.addSubview(stack)
         NSLayoutConstraint.activate([
@@ -354,27 +387,23 @@ final class ControlPanel: UIView {
             scroll.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
             scroll.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
             scroll.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-            stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 28),
-            stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -28),
-            stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 20),
-            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -20),
-            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -56),
+            stack.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 32),
+            stack.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -32),
+            stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 24),
+            stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -32),
+            stack.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -64),
         ])
-        titleLabel.font = .monospacedSystemFont(ofSize: 17, weight: .semibold)
-        titleLabel.textColor = UIColor(white: 0.9, alpha: 1)
-        titleLabel.text = "TAGANT"
-        status.font = .systemFont(ofSize: 14)
-        status.textColor = terracotta
-        status.numberOfLines = 0
-        sceneStatus.font = .systemFont(ofSize: 16, weight: .medium)
-        sceneStatus.textColor = UIColor(white: 0.95, alpha: 1)
+        titleLabel.textColor = salt
+        titleLabel.numberOfLines = 0
+        titleLabel.adjustsFontSizeToFitWidth = true
+        titleLabel.minimumScaleFactor = 0.6
+        tvLabel.textColor = salt.withAlphaComponent(0.45)
+        tvLabel.numberOfLines = 0
+        sceneStatus.textColor = salt.withAlphaComponent(0.8)
         sceneStatus.numberOfLines = 0
-        levelBar.progressTintColor = accent
+        levelBar.progressTintColor = red
         levelBar.trackTintColor = UIColor(white: 1, alpha: 0.08)
-        levelBar.heightAnchor.constraint(equalToConstant: 8).isActive = true
-        takesLabel.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        takesLabel.textColor = UIColor(white: 0.6, alpha: 1)
-
+        levelBar.heightAnchor.constraint(equalToConstant: 6).isActive = true
         diagLabel.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
         diagLabel.textColor = UIColor(red: 1, green: 0.6, blue: 0.5, alpha: 1)
         diagLabel.numberOfLines = 0
@@ -391,71 +420,95 @@ final class ControlPanel: UIView {
 
     func setMode(tv: Bool) {
         self.tv = tv
+        if tv { link.send("hello") }
         rebuild()
     }
 
-    private func makeButton(_ title: String, on: Bool, id: String) -> UIButton {
-        var cfg = UIButton.Configuration.bordered()
+    private func makeButton(_ title: String, on: Bool, id: String, size: CGFloat, height: CGFloat) -> UIButton {
+        var cfg = UIButton.Configuration.plain()
         cfg.title = title
-        cfg.baseForegroundColor = on ? UIColor.black : accent
-        cfg.baseBackgroundColor = on ? accent : UIColor(white: 1, alpha: 0.07)
-        cfg.cornerStyle = .small
-        cfg.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 14, bottom: 12, trailing: 14)
+        cfg.baseForegroundColor = salt
+        cfg.background.backgroundColor = on ? red : UIColor(white: 1, alpha: 0.03)
+        cfg.background.strokeColor = on ? red : salt.withAlphaComponent(0.3)
+        cfg.background.strokeWidth = 1
+        cfg.background.cornerRadius = 2
+        cfg.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10)
+        cfg.titleAlignment = .center
+        let f = TFont.body(title, size)
         cfg.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { a in
-            var a = a; a.font = UIFont.systemFont(ofSize: 17, weight: .medium); return a
+            var a = a; a.font = f; return a
         }
-        let b = UIButton(configuration: cfg, primaryAction: UIAction { [weak self] _ in self?.link.send(id) })
-        b.titleLabel?.numberOfLines = 2
-        b.titleLabel?.adjustsFontSizeToFitWidth = true
+        let b = UIButton(configuration: cfg, primaryAction: UIAction { [weak self] _ in
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            self?.link.send(id)
+        })
+        b.titleLabel?.numberOfLines = 3
+        b.titleLabel?.lineBreakMode = .byWordWrapping
+        b.titleLabel?.textAlignment = .center
+        b.heightAnchor.constraint(greaterThanOrEqualToConstant: height).isActive = true
         return b
     }
 
     private func header(_ t: String) -> UILabel {
         let l = UILabel()
-        l.text = t.uppercased()
-        l.font = .systemFont(ofSize: 12, weight: .semibold)
-        l.textColor = UIColor(white: 0.55, alpha: 1)
+        l.text = t
+        l.font = TFont.body(t, 16)
+        l.textColor = salt.withAlphaComponent(0.55)
+        l.numberOfLines = 0
         return l
     }
+
+    private func align(_ l: UILabel, _ rtl: Bool) { l.textAlignment = rtl ? .right : .left }
 
     private func rebuild() {
         for v in stack.arrangedSubviews { stack.removeArrangedSubview(v); v.removeFromSuperview() }
         let rtl = (ui["rtl"] as? Bool) ?? false
         semanticContentAttribute = rtl ? .forceRightToLeft : .forceLeftToRight
         stack.semanticContentAttribute = semanticContentAttribute
-        titleLabel.text = (ui["title"] as? String) ?? "TAGANT"
-        titleLabel.textAlignment = rtl ? .right : .left
-        status.text = tv ? ((ui["tv"] as? String) ?? "TV connected") : ((ui["no_tv"] as? String) ?? "No TV — plug in HDMI")
-        status.textAlignment = titleLabel.textAlignment
-        sceneStatus.textAlignment = titleLabel.textAlignment
-        takesLabel.text = (ui["takes"] as? String) ?? ""
-        if tv { stack.addArrangedSubview(titleLabel) }
-        stack.addArrangedSubview(status)
-        if tv { stack.addArrangedSubview(sceneStatus) }
+        let title = (ui["title"] as? String) ?? "TAGANT"
+        titleLabel.text = title
+        titleLabel.font = TFont.title(title, 34)
+        align(titleLabel, rtl)
+        align(sceneStatus, rtl)
+        align(tvLabel, rtl)
+        sceneStatus.font = TFont.body(sceneStatus.text ?? "", 17)
+        stack.addArrangedSubview(titleLabel)
+        if !(sceneStatus.text ?? "").isEmpty { stack.addArrangedSubview(sceneStatus) }
         let sections = (ui["sections"] as? [[String: Any]]) ?? []
         for sec in sections {
-            if !tv && !((sec["compact"] as? Bool) ?? false) { continue }
-            if tv { stack.addArrangedSubview(header((sec["title"] as? String) ?? "")) }
+            let t = (sec["title"] as? String) ?? ""
+            if !t.isEmpty { stack.addArrangedSubview(header(t)) }
             let buttons = (sec["buttons"] as? [[String: Any]]) ?? []
-            let perRow = tv ? 6 : 8
+            if buttons.isEmpty { continue }
+            let big = (sec["big"] as? Bool) ?? false
+            let small = (sec["small"] as? Bool) ?? false
+            let cols = max(1, (sec["cols"] as? Int) ?? 4)
+            let size: CGFloat = big ? 24 : (small ? 15 : 19)
+            let height: CGFloat = big ? 78 : (small ? 46 : 58)
             var i = 0
             while i < buttons.count {
-                let slice = buttons[i..<min(i + perRow, buttons.count)]
-                let row = UIStackView(arrangedSubviews: slice.map {
-                    makeButton(($0["label"] as? String) ?? "?", on: ($0["on"] as? Bool) ?? false, id: ($0["id"] as? String) ?? "")
-                })
+                let slice = Array(buttons[i..<min(i + cols, buttons.count)])
+                var views: [UIView] = []
+                for bd in slice {
+                    views.append(makeButton((bd["label"] as? String) ?? "?", on: (bd["on"] as? Bool) ?? false,
+                                            id: (bd["id"] as? String) ?? "", size: size, height: height))
+                }
+                while views.count < cols && buttons.count > cols { views.append(UIView()) }   // keep the grid
+                let row = UIStackView(arrangedSubviews: views)
                 row.axis = .horizontal
                 row.spacing = 10
+                row.alignment = .fill
                 row.distribution = .fillEqually
                 row.semanticContentAttribute = semanticContentAttribute
                 stack.addArrangedSubview(row)
-                i += perRow
+                i += cols
             }
+            stack.setCustomSpacing(26, after: stack.arrangedSubviews.last!)
         }
-        if tv {
-            stack.addArrangedSubview(levelBar)
-            stack.addArrangedSubview(takesLabel)
-        }
+        stack.addArrangedSubview(levelBar)
+        tvLabel.text = rtl ? "الشاشة الكبيرة متصلة" : "TV connected — the stage is on the big screen"
+        tvLabel.font = TFont.body(tvLabel.text!, 13)
+        stack.addArrangedSubview(tvLabel)
         // If the last run did not end cleanly, show where it stopped (for a photo to send).
         let prev = Trail.previous.trimmingCharacters(in: .whitespacesAndNewlines)
         var diag = ""
@@ -475,15 +528,20 @@ final class ControlPanel: UIView {
         let val = parts.count > 1 ? parts[1] : ""
         switch key {
         case "ui":
+            gotUI = true
+            if val == lastRaw { return }
             if let d = val.data(using: .utf8), let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] {
+                lastRaw = val
                 ui = obj
-                gotUI = true
                 rebuild()
             }
         case "level":
             levelBar.setProgress(Float(val) ?? 0, animated: false)
         case "status":
+            let had = !(sceneStatus.text ?? "").isEmpty
             sceneStatus.text = val
+            sceneStatus.font = TFont.body(val, 17)
+            if had != !val.isEmpty { rebuild() }
         case "diag":
             godotDiag = val
             rebuild()

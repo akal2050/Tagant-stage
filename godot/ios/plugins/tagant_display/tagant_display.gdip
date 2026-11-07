@@ -1,0 +1,13 @@
+[config]
+name="TagantDisplay"
+binary="libtagant_display.a"
+
+initialization="tagant_display_init"
+deinitialization="tagant_display_deinit"
+
+[dependencies]
+linked=[]
+embedded=[]
+system=["UIKit.framework", "Network.framework", "AVFoundation.framework", "AVFAudio.framework", "CoreText.framework"]
+capabilities=[]
+files=["fonts/Tektur.ttf", "fonts/Megrim.ttf", "fonts/Handjet.ttf"]
