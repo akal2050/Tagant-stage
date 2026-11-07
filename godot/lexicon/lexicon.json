@@ -1,0 +1,512 @@
+{
+ "_about": "TAGANT / حداء خلان الريح - every word the visitor reads, in English and Arabic. Edit here; the app reads this file at start. Sound and model IDs stay as they are; only display words live here. 'status' on voices: verified = taken from the source's own title; provisional = working title, needs the artist's ear.",
+ "opening": {
+  "title": {
+   "en": "TAGANT",
+   "ar": "تاغانت"
+  },
+  "subtitle": {
+   "en": "حداء خلان الريح",
+   "ar": "حداء خلان الريح"
+  },
+  "gloss": {
+   "en": "The Chant of the Wind's Companions",
+   "ar": ""
+  },
+  "paragraphs": {
+   "en": [
+    "TAGANT means forest in Amazigh.",
+    "It unfolds through seven worlds, where the voices of animals, herders and winds travel between bodies.",
+    "At the anrar, the threshing floor, the wind separates grain from chaff. Here, it also carries a call from one throat to another.",
+    "Some voices come from archives. Others are made from breath, vibration and imagined organs. Some belong to creatures that have not yet been born.",
+    "Listen. Follow a voice, bend it, or answer it."
+   ],
+   "ar": [
+    "تاغانت تعني الغابة بالأمازيغية.",
+    "تنفتح على سبعة عوالم، تعبر فيها أصوات الحيوانات والرعاة والرياح من جسد إلى آخر.",
+    "في الأنرار، البيدر، تفصل الريح الحبّ عن التبن. أما هنا، فتحمل النداء من حنجرة إلى أخرى.",
+    "بعض الأصوات جاء من الأرشيف، وبعضها صُنع من أنفاس وذبذبات وأعضاء متخيّلة. وبعضها لكائنات لم تولد بعد.",
+    "أصغِ. اتبع صوتًا، حوّره، أو أجب عنه."
+   ]
+  },
+  "question": {
+   "en": "Who is singing when you answer?",
+   "ar": "من الذي يغنّي حين تجيب؟"
+  },
+  "functional": {
+   "en": "A karaoke of animals, herders and winds",
+   "ar": "كاريوكي لأصوات الحيوانات ونداءات الرعاة والرياح"
+  },
+  "enter": {
+   "en": "Enter the forest",
+   "ar": "ادخل الغابة"
+  },
+  "loading": {
+   "en": "the voices are arriving…",
+   "ar": "الأصوات في الطريق…"
+  },
+  "load_error": {
+   "en": "A world could not be opened. Please call the gallery team.",
+   "ar": "تعذّر فتح أحد العوالم. يُرجى إبلاغ فريق القاعة."
+  },
+  "lang": {
+   "en": "عربي",
+   "ar": "English"
+  }
+ },
+ "worlds": {
+  "heading": {
+   "en": "Where will your voice go?",
+   "ar": "إلى أين سيمضي صوتك؟"
+  },
+  "circles": {
+   "title": {
+    "en": "THE SEVEN CIRCLES",
+    "ar": "الدوائر السبع"
+   },
+   "sub": {
+    "en": "",
+    "ar": ""
+   },
+   "desc": {
+    "en": "An assembly of animal bodies, salt circles and invented creatures.",
+    "ar": "مجلس من أجساد الحيوان ودوائر الملح وكائنات متخيّلة."
+   }
+  },
+  "aitwadu": {
+   "title": {
+    "en": "AIT WADU",
+    "ar": "أيت وادو"
+   },
+   "sub": {
+    "en": "The People of the Wind",
+    "ar": "أهل الريح"
+   },
+   "desc": {
+    "en": "A valley of herders' calls, flutes and winds.",
+    "ar": "وادٍ لنداءات الرعاة والناي والرياح."
+   }
+  },
+  "back_opening": {
+   "en": "◁  TAGANT",
+   "ar": "◁  تاغانت"
+  }
+ },
+ "ui": {
+  "Listen": {
+   "en": "Listen",
+   "ar": "أصغِ"
+  },
+  "Sing": {
+   "en": "Sing With",
+   "ar": "غنِّ معه"
+  },
+  "Rehearse": {
+   "en": "Practice",
+   "ar": "تمرّن"
+  },
+  "Dialogue": {
+   "en": "Answer",
+   "ar": "أجب"
+  },
+  "fold": {
+   "en": "Bring the line closer",
+   "ar": "قرّب منحنى الصوت"
+  },
+  "fold_tip": {
+   "en": "Moves the reference line by octaves. The original voice does not change.",
+   "ar": "ينقل منحنى المقارنة بين الأوكتافات. لا يتغيّر الصوت الأصلي."
+  },
+  "prev_phrase": {
+   "en": "◀  Previous call",
+   "ar": "◀  النداء السابق"
+  },
+  "next_phrase": {
+   "en": "Next call  ▶",
+   "ar": "النداء التالي  ▶"
+  },
+  "rec": {
+   "en": "●  Record your voice",
+   "ar": "●  سجّل صوتك"
+  },
+  "rec_stop": {
+   "en": "■  Stop recording",
+   "ar": "■  أوقف التسجيل"
+  },
+  "hear": {
+   "en": "▷  Hear yourself",
+   "ar": "▷  استمع إلى صوتك"
+  },
+  "dlg_start": {
+   "en": "Begin — a voice will call",
+   "ar": "ابدأ — سينادي صوت"
+  },
+  "dlg_stop": {
+   "en": "Stop answering",
+   "ar": "أوقف الإجابة"
+  },
+  "calls": {
+   "en": "A voice is calling — %s  (call %d)",
+   "ar": "صوت ينادي — %s  (النداء %d)"
+  },
+  "your_turn": {
+   "en": "Your turn — answer in your own voice",
+   "ar": "دورك — أجب بصوتك"
+  },
+  "heard": {
+   "en": "%s heard you — the call goes on",
+   "ar": "%s سمعك — ويمضي النداء"
+  },
+  "almost": {
+   "en": "The call returns",
+   "ar": "يعود النداء"
+  },
+  "not_yet": {
+   "en": "Listen again — follow its breath",
+   "ar": "أصغِ من جديد — اتبع نَفَسه"
+  },
+  "other_voices": {
+   "en": "other voices",
+   "ar": "أصوات أخرى"
+  },
+  "see_sound": {
+   "en": "See the sound",
+   "ar": "انظر إلى الصوت"
+  },
+  "see_sound_on": {
+   "en": "Simple view",
+   "ar": "عرض بسيط"
+  },
+  "choose_voice": {
+   "en": "Choose a voice",
+   "ar": "اختر صوتًا"
+  },
+  "back": {
+   "en": "◁  Back to TAGANT",
+   "ar": "◁  العودة إلى تاغانت"
+  },
+  "sec_animals": {
+   "en": "The Animals",
+   "ar": "الحيوان"
+  },
+  "sec_bestiary": {
+   "en": "The Bestiary",
+   "ar": "سِفْر الوَحِيش"
+  },
+  "sec_aitwadu": {
+   "en": "AIT WADU · The Calls",
+   "ar": "أيت وادو · النداءات"
+  },
+  "sec_adu": {
+   "en": "ADU · The Winds",
+   "ar": "أضو · الرياح"
+  },
+  "sec_aghanim": {
+   "en": "AGHANIM · Flutes and Flocks",
+   "ar": "أغانيم · الناي والقطعان"
+  }
+ },
+ "ui_circles": {
+  "title": {
+   "en": "TAGANT  ·  THE SEVEN CIRCLES",
+   "ar": "تاغانت  ·  الدوائر السبع"
+  }
+ },
+ "ui_aitwadu": {
+  "title": {
+   "en": "TAGANT  ·  AIT WADU",
+   "ar": "تاغانت  ·  أيت وادو"
+  }
+ },
+ "origin": {
+  "archive": {
+   "en": "From the archive",
+   "ar": "من الأرشيف"
+  },
+  "synth": {
+   "en": "Synthesised voice",
+   "ar": "صوت مُركَّب"
+  },
+  "imagined": {
+   "en": "Imagined voice",
+   "ar": "صوت متخيَّل"
+  },
+  "borrowed": {
+   "en": "Borrowed voice",
+   "ar": "صوت مُستعار"
+  },
+  "borrowed_note": {
+   "en": "this body sings with another animal's voice until its own is made",
+   "ar": "يغنّي هذا الجسد بصوت حيوان آخر إلى أن يُصنع صوته"
+  }
+ },
+ "borrowed_voice_bodies": [
+  "Storks (Ait Wadu)",
+  "Vulture (salt)",
+  "Cobra (salt)",
+  "Oryx (salt)",
+  "Bear (Ait Wadu)",
+  "Horse (salt)"
+ ],
+ "voices": {
+  "myna_flock_01": {
+   "en": "A Flock of Mynas",
+   "ar": "سرب من طيور المينا",
+   "source": "synth",
+   "status": "provisional",
+   "code": "myna_flock_01"
+  },
+  "myna_clean_ab": {
+   "en": "One Myna",
+   "ar": "طائر مينا واحد",
+   "source": "synth",
+   "status": "provisional",
+   "code": "myna_clean_ab"
+  },
+  "hybrid_human_animal_01": {
+   "en": "One Throat, Two Bodies",
+   "ar": "حنجرة واحدة لجسدين",
+   "source": "imagined",
+   "status": "provisional",
+   "code": "hybrid_human_animal_01"
+  },
+  "dove_flock_01": {
+   "en": "Doves Cooing",
+   "ar": "هديل الحمام",
+   "source": "synth",
+   "status": "provisional",
+   "code": "dove_flock_01"
+  },
+  "camel_flock_05": {
+   "en": "A Herd of Camels",
+   "ar": "قطيع من الإبل",
+   "source": "synth",
+   "status": "provisional",
+   "code": "camel_flock_05"
+  },
+  "camel_choir_04": {
+   "en": "Seven Camels Calling",
+   "ar": "سبعة جمال تنادي",
+   "source": "synth",
+   "status": "provisional",
+   "code": "camel_choir_04"
+  },
+  "camel_one_call": {
+   "en": "One Camel Calling",
+   "ar": "نداء جمل واحد",
+   "source": "synth",
+   "status": "provisional",
+   "code": "camel_one_call"
+  },
+  "goat_herd_01": {
+   "en": "Goats and Their Bells",
+   "ar": "الماعز وأجراسها",
+   "source": "synth",
+   "status": "provisional",
+   "code": "goat_herd_01"
+  },
+  "hyena_01": {
+   "en": "The Striped Hyena",
+   "ar": "الضبع المخطَّط",
+   "source": "synth",
+   "status": "provisional",
+   "code": "hyena_01"
+  },
+  "hyena_02": {
+   "en": "The Hyena's Other Voice",
+   "ar": "صوت الضبع الآخر",
+   "source": "synth",
+   "status": "provisional",
+   "code": "hyena_02"
+  },
+  "jackal_night_01": {
+   "en": "Jackals in the Night",
+   "ar": "بنات آوى في الليل",
+   "source": "synth",
+   "status": "provisional",
+   "code": "jackal_night_01"
+  },
+  "donkey_valley_01": {
+   "en": "Donkeys Braying across the Valley",
+   "ar": "نهيق الحمير عبر الوادي",
+   "source": "synth",
+   "status": "provisional",
+   "code": "donkey_valley_01"
+  },
+  "imaginary_species_01": {
+   "en": "Throats Not Yet Born",
+   "ar": "حناجر لم تولد بعد",
+   "source": "imagined",
+   "status": "provisional",
+   "code": "imaginary_species_01"
+  },
+  "frogs_01": {
+   "en": "Frogs and Toads",
+   "ar": "الضفادع والعلاجيم",
+   "source": "synth",
+   "status": "provisional",
+   "code": "frogs_01"
+  },
+  "cicadas_crickets_01": {
+   "en": "Cicadas and Crickets, Noon to Night",
+   "ar": "الزيز والصراصير، من الظهيرة إلى الليل",
+   "source": "synth",
+   "status": "provisional",
+   "code": "cicadas_crickets_01"
+  },
+  "wind_saba": {
+   "en": "Saba, the Wind of Dawn",
+   "ar": "الصَّبا، ريح الفجر",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_saba"
+  },
+  "wind_harmattan": {
+   "en": "Harmattan, the Dusty North-East",
+   "ar": "الهرمتان، الريح المغبرّة",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_harmattan"
+  },
+  "wind_chergui": {
+   "en": "Chergui, the Hot East Wind",
+   "ar": "الشرقي، الريح الحارّة",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_chergui"
+  },
+  "wind_khamsin": {
+   "en": "Khamsin, the Fifty Days",
+   "ar": "الخماسين، ريح الأيام الخمسين",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_khamsin"
+  },
+  "wind_simoom": {
+   "en": "Simoom, the Poison Wind",
+   "ar": "السموم، الريح المسمومة",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_simoom"
+  },
+  "wind_shamal": {
+   "en": "Shamal, the North-West Wind",
+   "ar": "الشمال، الريح الشمالية الغربية",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_shamal"
+  },
+  "wind_dabur": {
+   "en": "Dabur, the Howling West Wind",
+   "ar": "الدَّبور، الريح الغربية العاوية",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_dabur"
+  },
+  "wind_ajaj": {
+   "en": "Ajaj, the Whirling Dust",
+   "ar": "العَجاج، الغبار الدوّار",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_ajaj"
+  },
+  "wind_haboob": {
+   "en": "Haboob, the Wall of Dust",
+   "ar": "الهَبوب، جدار الغبار",
+   "source": "synth",
+   "status": "provisional",
+   "code": "wind_haboob"
+  },
+  "wolves_foxes": {
+   "en": "To Keep the Wolves Away",
+   "ar": "لإبعاد الذئاب",
+   "source": "archive",
+   "status": "verified",
+   "code": "wolves_foxes"
+  },
+  "pipe_tune_1": {
+   "en": "The Shepherd's Pipe, I",
+   "ar": "ناي الراعي، ١",
+   "source": "archive",
+   "status": "verified",
+   "code": "pipe_tune_1"
+  },
+  "pipe_tune_2": {
+   "en": "The Shepherd's Pipe, II",
+   "ar": "ناي الراعي، ٢",
+   "source": "archive",
+   "status": "verified",
+   "code": "pipe_tune_2"
+  },
+  "tawat": {
+   "en": "Tawat, a Fragment",
+   "ar": "تاوات، مقطع",
+   "source": "archive",
+   "status": "verified",
+   "code": "tawat"
+  },
+  "goatherd_1": {
+   "en": "A Goatherd's Tune",
+   "ar": "لحن راعي الماعز",
+   "source": "archive",
+   "status": "verified",
+   "code": "goatherd_1"
+  },
+  "flock_into_field": {
+   "en": "Leading the Flock into the Field",
+   "ar": "إدخال القطيع إلى الحقل",
+   "source": "archive",
+   "status": "verified",
+   "code": "flock_into_field"
+  },
+  "scatter_flock": {
+   "en": "Scattering the Flock",
+   "ar": "تفريق القطيع",
+   "source": "archive",
+   "status": "verified",
+   "code": "scatter_flock"
+  },
+  "sheep_to_hills": {
+   "en": "Sending the Sheep to the Hills",
+   "ar": "إرسال الغنم إلى التلال",
+   "source": "archive",
+   "status": "verified",
+   "code": "sheep_to_hills"
+  },
+  "sheep_down": {
+   "en": "Bringing the Sheep Down",
+   "ar": "إنزال الغنم من التلال",
+   "source": "archive",
+   "status": "verified",
+   "code": "sheep_down"
+  },
+  "t2090r12": {
+   "en": "A Call from the Archive, I",
+   "ar": "نداء من الأرشيف، ١",
+   "source": "archive",
+   "status": "provisional",
+   "code": "T2090 R12"
+  },
+  "t2095r01": {
+   "en": "A Call from the Archive, II",
+   "ar": "نداء من الأرشيف، ٢",
+   "source": "archive",
+   "status": "provisional",
+   "code": "T2095 R01"
+  },
+  "t2095r12": {
+   "en": "A Call from the Archive, III",
+   "ar": "نداء من الأرشيف، ٣",
+   "source": "archive",
+   "status": "provisional",
+   "code": "T2095 R12"
+  },
+  "t2095r17": {
+   "en": "A Call from the Archive, IV",
+   "ar": "نداء من الأرشيف، ٤",
+   "source": "archive",
+   "status": "provisional",
+   "code": "T2095 R17"
+  }
+ }
+}

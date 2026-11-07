@@ -1,0 +1,19 @@
+TAGANT ANIMAL KARAOKE - voices still to build (2026-10-29)
+Pd patches go in C:\Users\azoor\Documents\REAPER Media\TAGANT_pd\synth_animals\<animal>\  (acoustic research first)
+Renders go in C:\Users\azoor\Documents\tagant-karaoke\animal-karaoke\songs\  (ogg) + spectra\ (tools\spectrogram.py)
+
+ANIMALS (real) - borrowing a voice until their own exists
+  Block 1  Storks (Ait Wadu)      -> bill-clattering (white stork; adults are nearly voiceless)   now: dove_flock_01
+  Block 1  Vulture (salt)         -> griffon vulture: hisses, grunts, squabbles at a carcass      now: dove_flock_01
+  Block 2  Cobra (salt)           -> hood hiss                                                     now: jackal_night_01
+  Block 2  Jackal (salt fennec)   -> optional: fennec's own yips / purr                            now: jackal_night_01
+  Block 3  Oryx (salt)            -> low grunts, snorts                                            now: goat_herd_01
+  Block 5  Bear (Ait Wadu)        -> huffs, moans, jaw-popping                                     now: hybrid_human_animal_01
+  Block 6  Horse (salt)           -> whinny, nicker, snort                                         now: donkey_valley_01
+  Missing model: a real MYNA (the myna voices now sit with the myna-headed hybrid in the Bestiary)
+
+BESTIARY (imaginary / speculative) - all share imaginary_species_01 / hybrid_human_animal_01
+  one voice family each: wind drifters (1-7), winged serpents (1-7), pentaradial walkers (1,2,4-7), chimeras (01-05)
+
+Already rendered, not yet in the app: night_birds_01 (owls, nightjars) - night_birds\renders\night_birds_01_tour.mp3
+Drummer removed from the app.

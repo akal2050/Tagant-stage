@@ -1,1 +1,0 @@
-OK camel_v2 22.4 MB {'anims': [('Walk', 327), ('Idle_02', 327), ('Idle_01', 327)], 'meshes': 3, 'skins': 1, 'images': 7}
