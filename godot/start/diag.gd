@@ -57,10 +57,7 @@ func previous_problem() -> String:
 	var last: String = prev[-1]
 	if last.begins_with("paused") or last.begins_with("opening") or last.begins_with("launch"):
 		return ""
-	var steps: Array = []
-	for l in prev.slice(-3):
-		steps.append(String(l))
-	var txt := "Last time the app stopped:  " + "  ›  ".join(PackedStringArray(steps))
+	var txt := "Last time the app stopped:  " + last
 	var errs := _log_errors()
 	if errs != "":
 		txt += "\n" + errs

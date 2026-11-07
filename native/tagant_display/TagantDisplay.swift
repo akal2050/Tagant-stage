@@ -452,8 +452,9 @@ final class ControlPanel: UIView {
     private func header(_ t: String) -> UILabel {
         let l = UILabel()
         l.text = t
-        l.font = TFont.body(t, 16)
-        l.textColor = salt.withAlphaComponent(0.55)
+        l.font = TFont.body(t.uppercased(), 20)
+        l.text = TFont.isArabic(t) ? t : t.uppercased()
+        l.textColor = salt.withAlphaComponent(0.85)
         l.numberOfLines = 0
         return l
     }
@@ -467,24 +468,41 @@ final class ControlPanel: UIView {
         stack.semanticContentAttribute = semanticContentAttribute
         let title = (ui["title"] as? String) ?? "TAGANT"
         titleLabel.text = title
-        titleLabel.font = TFont.title(title, 34)
+        titleLabel.font = TFont.title(title, 38)
         align(titleLabel, rtl)
         align(sceneStatus, rtl)
         align(tvLabel, rtl)
-        sceneStatus.font = TFont.body(sceneStatus.text ?? "", 17)
+        sceneStatus.font = TFont.body(sceneStatus.text ?? "", 20)
         stack.addArrangedSubview(titleLabel)
         if !(sceneStatus.text ?? "").isEmpty { stack.addArrangedSubview(sceneStatus) }
         let sections = (ui["sections"] as? [[String: Any]]) ?? []
         for sec in sections {
-            let t = (sec["title"] as? String) ?? ""
-            if !t.isEmpty { stack.addArrangedSubview(header(t)) }
             let buttons = (sec["buttons"] as? [[String: Any]]) ?? []
             if buttons.isEmpty { continue }
+            let t = (sec["title"] as? String) ?? ""
             let big = (sec["big"] as? Bool) ?? false
             let small = (sec["small"] as? Bool) ?? false
             let cols = max(1, (sec["cols"] as? Int) ?? 4)
-            let size: CGFloat = big ? 24 : (small ? 15 : 19)
-            let height: CGFloat = big ? 78 : (small ? 46 : 58)
+            let size: CGFloat = big ? 26 : (small ? 17 : 21)
+            let height: CGFloat = big ? 84 : (small ? 52 : 64)
+            // one box per category: red rule, title, then the buttons
+            let card = UIStackView()
+            card.axis = .vertical
+            card.spacing = 10
+            card.isLayoutMarginsRelativeArrangement = true
+            card.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 16, trailing: 16)
+            card.backgroundColor = UIColor(white: 1, alpha: 0.045)
+            card.layer.cornerRadius = 4
+            card.semanticContentAttribute = semanticContentAttribute
+            let rule = UIView()
+            rule.backgroundColor = red
+            rule.heightAnchor.constraint(equalToConstant: 2).isActive = true
+            card.addArrangedSubview(rule)
+            if !t.isEmpty {
+                let h = header(t)
+                align(h, rtl)
+                card.addArrangedSubview(h)
+            }
             var i = 0
             while i < buttons.count {
                 let slice = Array(buttons[i..<min(i + cols, buttons.count)])
@@ -500,10 +518,10 @@ final class ControlPanel: UIView {
                 row.alignment = .fill
                 row.distribution = .fillEqually
                 row.semanticContentAttribute = semanticContentAttribute
-                stack.addArrangedSubview(row)
+                card.addArrangedSubview(row)
                 i += cols
             }
-            stack.setCustomSpacing(26, after: stack.arrangedSubviews.last!)
+            stack.addArrangedSubview(card)
         }
         stack.addArrangedSubview(levelBar)
         tvLabel.text = rtl ? "الشاشة الكبيرة متصلة" : "TV connected — the stage is on the big screen"
@@ -540,7 +558,7 @@ final class ControlPanel: UIView {
         case "status":
             let had = !(sceneStatus.text ?? "").isEmpty
             sceneStatus.text = val
-            sceneStatus.font = TFont.body(val, 17)
+            sceneStatus.font = TFont.body(val, 20)
             if had != !val.isEmpty { rebuild() }
         case "diag":
             godotDiag = val

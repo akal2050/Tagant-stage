@@ -71,6 +71,10 @@ func _ar() -> bool:
 	return Worlds.world_lang() == "ar"
 
 
+func _h(key: String) -> String:
+	return Lex.get_text("panel", key, _ar())
+
+
 func describe() -> Dictionary:
 	var ar := _ar()
 	var d := {"rtl": ar, "sections": [], "title": "TAGANT", "status": ""}
@@ -83,7 +87,7 @@ func describe() -> Dictionary:
 			var b: Array = []
 			if st.enter_btn.visible:
 				b.append(_btn("enter", st.enter_btn.text))
-			d.sections.append({"title": st.o_sub.text, "big": true, "buttons": b})
+			d.sections.append({"title": _h("enter"), "big": true, "buttons": b})
 			d.status = st.o_status.text
 			if st.diag_lbl and st.diag_lbl.text != "":
 				d.status += ("\n" if d.status != "" else "") + st.diag_lbl.text
@@ -96,10 +100,10 @@ func describe() -> Dictionary:
 				if c[1].visible and c[1].text != "":
 					l += "\n" + c[1].text
 				b.append(_btn("world:" + k, l))
-			d.sections.append({"title": "", "big": true, "cols": 2, "buttons": b})
+			d.sections.append({"title": _h("worlds"), "big": true, "cols": 2, "buttons": b})
 			d.sections.append({"title": "", "cols": 2, "buttons": [_btn("opening", st.back_btn.text)]})
 			d.status = st.w_status.text
-		d.sections.append({"title": "", "cols": 2, "buttons": [_btn("lang", st.lang_btn.text)]})
+		d.sections.append({"title": _h("view"), "cols": 2, "buttons": [_btn("lang", st.lang_btn.text)]})
 		return d
 	if u == null:
 		return d
@@ -113,7 +117,7 @@ func describe() -> Dictionary:
 		sec_row = b.get_parent()
 		secs.append(_btn("sec:" + k, b.text, b.button_pressed))
 	if secs.size() > 1 and sec_row != null and sec_row.visible:
-		d.sections.append({"title": "", "cols": secs.size(), "buttons": secs})
+		d.sections.append({"title": _h("group"), "cols": secs.size(), "buttons": secs})
 	# singers (the strip on the left of the stage)
 	var sing: Array = []
 	for id in u.animal_buttons:
@@ -123,10 +127,10 @@ func describe() -> Dictionary:
 			name = b.text
 		sing.append(_btn("slot:" + id, name, b.button_pressed))
 	if sing.size() > 0:
-		d.sections.append({"title": "", "cols": 4, "buttons": sing})
+		d.sections.append({"title": _h("singers"), "cols": 4, "buttons": sing})
 	# the creature on this block (the on-screen arrows)
 	if u.arrow_l.visible:
-		d.sections.append({"title": u.arrow_name.text, "cols": 2, "buttons": [
+		d.sections.append({"title": _h("creature") + "  ·  " + u.arrow_name.text, "cols": 2, "buttons": [
 			_btn("cr:-1", "◀" if not ar else "▶"), _btn("cr:1", "▶" if not ar else "◀")]})
 	# voices: own first, then the others
 	var own: Array = []
@@ -141,13 +145,13 @@ func describe() -> Dictionary:
 			continue
 		into.append(_btn("song:%d" % i, so.get_item_text(i), so.selected == i))
 	if own.size() > 0:
-		d.sections.append({"title": u.song_opt.tooltip_text, "cols": 3, "buttons": own})
+		d.sections.append({"title": _h("voice"), "cols": 3, "buttons": own})
 	# modes
 	var modes: Array = []
 	for md in u.mode_buttons:
 		var b: Button = u.mode_buttons[md]
 		modes.append(_btn("mode:" + md, b.text, b.button_pressed))
-	d.sections.append({"title": "", "cols": 4, "buttons": modes})
+	d.sections.append({"title": _h("mode"), "cols": 4, "buttons": modes})
 	# what this mode offers
 	var act: Array = []
 	if u.play_btn.visible:
@@ -161,12 +165,12 @@ func describe() -> Dictionary:
 	if u.row_dialogue.visible:
 		act.append(_btn("dlg", u.dlg_btn.text, main.dlg_on))
 	if act.size() > 0:
-		d.sections.append({"title": "", "big": true, "cols": mini(act.size(), 4), "buttons": act})
+		d.sections.append({"title": _h("controls"), "big": true, "cols": mini(act.size(), 4), "buttons": act})
 	if u.row_rehearse.visible:
 		var r: Array = [_btn("loop", u.loop_chk.text, u.loop_chk.button_pressed)]
 		for i in u.speed_opt.item_count:
 			r.append(_btn("speed:%d" % i, u.speed_opt.get_item_text(i), u.speed_opt.selected == i))
-		d.sections.append({"title": "", "cols": 4, "buttons": r})
+		d.sections.append({"title": _h("practice"), "cols": 4, "buttons": r})
 	if other.size() > 0:
 		d.sections.append({"title": other_title, "cols": 3, "small": true, "buttons": other})
 	# view and language
@@ -177,7 +181,7 @@ func describe() -> Dictionary:
 		v.append(_btn("fold", u.fold_chk.text, u.fold_chk.button_pressed))
 	v.append(_btn("lang", u.lang_btn.text))
 	v.append(_btn("back", Worlds.back.text))
-	d.sections.append({"title": "", "cols": mini(v.size(), 5), "buttons": v})
+	d.sections.append({"title": _h("view"), "cols": mini(v.size(), 3), "buttons": v})
 	# status: where the voice comes from, the phrase, the dialogue, (the score in analysis)
 	var lines: Array = []
 	for l in [u.origin_lbl, u.phrase_lbl, u.dlg_lbl, u.score_lbl, u.mic_lbl]:

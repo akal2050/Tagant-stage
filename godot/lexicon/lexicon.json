@@ -508,5 +508,51 @@
    "status": "provisional",
    "code": "T2095 R17"
   }
+ },
+ "panel": {
+  "_note": {
+   "en": "Category titles of the iPad control panel. Working wording proposed by Claude (7 Nov 2026), for the artist to change.",
+   "ar": ""
+  },
+  "group": {
+   "en": "Group",
+   "ar": "المجموعة"
+  },
+  "singers": {
+   "en": "Who sings",
+   "ar": "من يغنّي"
+  },
+  "creature": {
+   "en": "Body on this place",
+   "ar": "الجسد في هذا المكان"
+  },
+  "voice": {
+   "en": "Voice",
+   "ar": "الصوت"
+  },
+  "mode": {
+   "en": "Mode",
+   "ar": "الطريقة"
+  },
+  "controls": {
+   "en": "Controls",
+   "ar": "التحكّم"
+  },
+  "practice": {
+   "en": "Practice settings",
+   "ar": "إعدادات التمرين"
+  },
+  "view": {
+   "en": "View and language",
+   "ar": "العرض واللغة"
+  },
+  "enter": {
+   "en": "Start",
+   "ar": "البداية"
+  },
+  "worlds": {
+   "en": "Choose a world",
+   "ar": "اختر عالمًا"
+  }
  }
 }

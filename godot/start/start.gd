@@ -17,6 +17,7 @@ var t := 0.0
 var loaded := {}
 var failed := false
 var pending := ""          # world being loaded after its card was tapped
+var _wait_frames := 0
 var w_status: Label
 var diag_lbl: Label
 
@@ -238,18 +239,20 @@ func _status() -> void:
 
 func _process(delta: float) -> void:
 	t += delta
-	if pending != "" and not loaded.has(pending):
-		var st := ResourceLoader.load_threaded_get_status(SCENES[pending])
-		if st == ResourceLoader.THREAD_LOAD_LOADED:
-			loaded[pending] = ResourceLoader.load_threaded_get(SCENES[pending])
-			Diag.mark("loaded " + pending)
+	if pending != "":
+		# plain loading on the main thread (background loading stopped the app on the iPad);
+		# wait a few frames so "loading…" is on screen first
+		_wait_frames -= 1
+		if _wait_frames <= 0:
 			var k := pending
 			pending = ""
-			Worlds.enter(k, loaded[k])
-			return
-		elif st == ResourceLoader.THREAD_LOAD_FAILED or st == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
-			Diag.mark("load failed " + pending)
-			pending = ""
+			var ps = ResourceLoader.load(SCENES[k], "PackedScene")
+			if ps is PackedScene:
+				loaded[k] = ps
+				Diag.mark("loaded " + k)
+				Worlds.enter(k, ps)
+				return
+			Diag.mark("load failed " + k)
 			w_status.text = Lex.get_text("opening", "load_error", _ar())
 	if page == "opening":
 		_status()
@@ -269,8 +272,6 @@ func _open(k: String) -> void:
 	if pending != "" or not SCENES.has(k):
 		return
 	Diag.mark("loading " + k)
-	if ResourceLoader.load_threaded_request(SCENES[k]) != OK:
-		w_status.text = Lex.get_text("opening", "load_error", _ar())
-		return
 	pending = k
+	_wait_frames = 4
 	w_status.text = Lex.get_text("opening", "loading", _ar())
