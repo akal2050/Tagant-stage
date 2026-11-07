@@ -14,7 +14,7 @@ env:
 jobs:
   build:
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -27,8 +27,7 @@ jobs:
           xcodebuild -version
           xcrun --sdk iphoneos --show-sdk-version
 
-      - name: Build native two-screen plugin
-        run: bash native/tagant_display/build.sh
+      # (the two-screen plugin in native/ is not used by this build: the iPad mirrors to the TV)
 
       - name: Cache Godot
         id: godot-cache
