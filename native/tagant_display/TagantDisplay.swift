@@ -99,6 +99,7 @@ final class TagantDisplay {
     private var mainWindow: UIWindow?
     private var godotVC: UIViewController?
     private var originalSuperview: UIView?
+    private weak var originalParentVC: UIViewController?
 
     private var externalWindow: UIWindow?
     private var externalScene: UIWindowScene?
@@ -151,6 +152,7 @@ final class TagantDisplay {
         mainWindow = win
         mainScale = win.screen.scale
         originalSuperview = vc.view.superview
+        originalParentVC = vc.parent
 
         Trail.mark("godot view ready")
         let p = ControlPanel(link: link)
@@ -218,10 +220,17 @@ final class TagantDisplay {
         externalScene = ws
         hostVC = host
 
+        // Move Godot's view controller *with* its view (UIKit forbids moving a
+        // controller's root view on its own: UIViewControllerHierarchyInconsistency).
         let stage = vc.view!
+        Trail.mark("move controller")
+        vc.willMove(toParent: nil)
         stage.removeFromSuperview()
+        vc.removeFromParent()
+        host.addChild(vc)
         stage.autoresizingMask = []
         host.view.addSubview(stage)
+        vc.didMove(toParent: host)
         host.stageView = stage
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
@@ -237,11 +246,15 @@ final class TagantDisplay {
         guard let ws = externalScene, ws === scene else { return }
         if let vc = godotVC, let sup = originalSuperview {
             let stage = vc.view!
+            vc.willMove(toParent: nil)
             stage.removeFromSuperview()
+            vc.removeFromParent()
+            if let parent = originalParentVC { parent.addChild(vc) }
             stage.transform = .identity
             stage.frame = sup.bounds
             stage.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             sup.addSubview(stage)
+            if let parent = originalParentVC { vc.didMove(toParent: parent) }
             stage.setNeedsLayout()
         }
         externalWindow?.isHidden = true
