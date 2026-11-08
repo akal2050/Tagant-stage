@@ -6,6 +6,7 @@ extends Node
 
 const TRAIL := "user://trail.txt"
 const SKIP := "user://skip.txt"
+const IPAD_LIGHT := ["_backstage", "_gardens"]
 var prev: Array = []
 var skip: Array = []
 var _t := 0.0
@@ -18,8 +19,11 @@ func _ready() -> void:
 	for l in old.split("\n"):
 		if l.strip_edges() != "":
 			prev.append(l)
+	# iPad: the two heaviest pieces of the Seven Worlds (more than half of its memory) are left out from the start
+	if OS.has_feature("ios") or OS.get_name() == "iOS" or OS.get_cmdline_user_args().has("--ios-light"):
+		skip.append_array(IPAD_LIGHT)
 	for l in FileAccess.get_file_as_string(SKIP).split("\n"):
-		if l.strip_edges() != "":
+		if l.strip_edges() != "" and not skip.has(l.strip_edges()):
 			skip.append(l.strip_edges())
 	# the run before stopped while building a piece of a world: leave that piece out from now on
 	if not prev.is_empty():
@@ -30,7 +34,7 @@ func _ready() -> void:
 				skip.append(piece)
 				var sf := FileAccess.open(SKIP, FileAccess.WRITE)
 				if sf:
-					sf.store_string("\n".join(PackedStringArray(skip)))
+					sf.store_string("\n".join(PackedStringArray(skip.filter(func(x): return not IPAD_LIGHT.has(x)))))
 					sf.close()
 	var f := FileAccess.open(TRAIL, FileAccess.WRITE)
 	if f:
@@ -104,6 +108,8 @@ func _log_errors() -> String:
 	files.sort()
 	var lines: Array = []
 	for l in FileAccess.get_file_as_string("user://logs/" + files[-1]).split("\n"):
+		if l.contains("mouse is not supported"):
+			continue
 		if l.begins_with("ERROR") or l.begins_with("SCRIPT ERROR") or l.contains("CrashHandler") or l.contains("signal "):
 			lines.append(l.substr(0, 110))
 	return " | ".join(PackedStringArray(lines.slice(-3)))
